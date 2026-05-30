@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Send, Square, Clock, Sparkles, Bot, User as UserIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Square, Clock, Sparkles, Bot, User as UserIcon, Loader2, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { interviewChat, scoreInterview } from "@/lib/api/interview.functions";
 
