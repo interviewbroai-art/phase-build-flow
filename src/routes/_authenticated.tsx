@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Navigate, Link, useRouter, useLocation } from 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, LayoutDashboard, History, Settings, LogOut } from "lucide-react";
+import { Sparkles, LayoutDashboard, History, Settings, LogOut, Trophy } from "lucide-react";
 import { motion } from "motion/react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -88,6 +88,7 @@ function Sidebar({
   const items = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/history", label: "Interview history", icon: History },
+    { to: "/achievements", label: "Achievements", icon: Trophy },
     { to: "/settings", label: "Settings", icon: Settings },
   ] as const;
   const name = profile?.display_name || email.split("@")[0] || "You";
