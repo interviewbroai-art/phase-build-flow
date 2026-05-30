@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import heroOrb from "@/assets/hero-ai-orb.jpg";
 import {
   Sparkles,
@@ -13,6 +15,7 @@ import {
   Zap,
   MessageSquare,
   GraduationCap,
+  Volume2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -22,13 +25,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Crack interviews with realistic AI mock interviews, resume analysis, and personalized feedback. Built for Indian students and freshers.",
+          "Realistic AI mock interviews, resume scoring, voice mode, and placement prep for TCS, Infosys, Amazon and more. Built for Indian students.",
       },
       { property: "og:title", content: "InterviewBro AI — Your personal AI placement coach" },
       {
         property: "og:description",
         content:
-          "Realistic AI mock interviews, resume scoring, voice mode, and placement prep for TCS, Infosys, Amazon and more.",
+          "Practice realistic HR, technical, and behavioral interviews. Get instant feedback and resume scoring.",
       },
     ],
   }),
@@ -37,112 +40,274 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-hero">
+    <div className="min-h-screen bg-hero relative overflow-hidden">
+      <BackgroundFx />
       <Nav />
       <Hero />
-      <Logos />
+      <LogoMarquee />
+      <LiveDemo />
       <Features />
       <Modes />
       <HowItWorks />
       <Pricing />
+      <CTA />
       <Footer />
     </div>
   );
 }
 
-function Nav() {
+/* ---------- Background ---------- */
+function BackgroundFx() {
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/40 border-b border-border/40">
+    <div className="pointer-events-none absolute inset-0 -z-0">
+      <div className="absolute inset-0 bg-grid opacity-60" />
+      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/30 blur-[120px] animate-blob" />
+      <div
+        className="absolute top-[30%] right-[-15%] w-[700px] h-[700px] rounded-full bg-accent/25 blur-[140px] animate-blob"
+        style={{ animationDelay: "-6s" }}
+      />
+      <div
+        className="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] rounded-full bg-primary-glow/20 blur-[120px] animate-blob"
+        style={{ animationDelay: "-12s" }}
+      />
+      <div className="noise" />
+    </div>
+  );
+}
+
+/* ---------- Nav ---------- */
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 8);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
+  return (
+    <header
+      className={`sticky top-0 z-40 transition-all ${
+        scrolled ? "glass border-b border-border/40" : "bg-transparent"
+      }`}
+    >
       <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2">
-          <span className="grid place-items-center w-9 h-9 rounded-2xl clay-sm">
+        <a href="#" className="flex items-center gap-2 group">
+          <span className="grid place-items-center w-9 h-9 rounded-2xl clay-sm group-hover:rotate-12 transition-transform">
             <Sparkles className="w-4 h-4 text-primary-glow" />
           </span>
-          <span className="font-display font-bold text-lg">InterviewBro<span className="text-gradient"> AI</span></span>
+          <span className="font-display font-bold text-lg">
+            InterviewBro<span className="text-gradient"> AI</span>
+          </span>
         </a>
         <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-          <a href="#features" className="hover:text-foreground transition">Features</a>
-          <a href="#modes" className="hover:text-foreground transition">Modes</a>
-          <a href="#how" className="hover:text-foreground transition">How it works</a>
-          <a href="#pricing" className="hover:text-foreground transition">Pricing</a>
+          {["Features", "Modes", "How it works", "Pricing"].map((l) => (
+            <a
+              key={l}
+              href={`#${l.toLowerCase().replace(/ /g, "")}`}
+              className="hover:text-foreground transition story-link"
+            >
+              {l}
+            </a>
+          ))}
         </nav>
         <div className="flex items-center gap-3">
-          <a href="#" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">Sign in</a>
-          <a href="#" className="btn-clay text-sm py-2.5 px-5">Get started</a>
+          <a href="#" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">
+            Sign in
+          </a>
+          <MagneticButton href="#" className="btn-clay text-sm py-2.5 px-5">
+            Get started
+          </MagneticButton>
         </div>
       </div>
     </header>
   );
 }
 
-function Hero() {
+/* ---------- Magnetic button ---------- */
+function MagneticButton({
+  href,
+  className = "",
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const reduced = useReducedMotion();
   return (
-    <section className="relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-28 grid lg:grid-cols-2 gap-16 items-center">
+    <a
+      ref={ref}
+      href={href}
+      onMouseMove={(e) => {
+        if (reduced || !ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        const x = e.clientX - r.left - r.width / 2;
+        const y = e.clientY - r.top - r.height / 2;
+        ref.current.style.transform = `translate(${x * 0.18}px, ${y * 0.25}px)`;
+      }}
+      onMouseLeave={() => {
+        if (ref.current) ref.current.style.transform = "translate(0,0)";
+      }}
+      className={className}
+      style={{ transition: "transform 200ms ease" }}
+    >
+      {children}
+    </a>
+  );
+}
+
+/* ---------- Hero ---------- */
+function Hero() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -80]);
+  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.3]);
+
+  return (
+    <section ref={ref} className="relative">
+      <motion.div
+        style={{ y, opacity }}
+        className="mx-auto max-w-7xl px-6 pt-16 md:pt-24 pb-24 grid lg:grid-cols-[1.05fr_1fr] gap-14 items-center"
+      >
         <div>
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full clay-sm text-xs text-muted-foreground">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full clay-sm text-xs text-muted-foreground"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-glow" />
-            Now with voice interview mode
-          </span>
-          <h1 className="mt-6 text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05]">
-            Your personal <span className="text-gradient">AI placement</span> coach.
-          </h1>
-          <p className="mt-6 text-lg text-muted-foreground max-w-xl">
-            Practice realistic HR, technical, and behavioral interviews. Get instant feedback, resume scoring, and
+            Voice interview mode is live
+          </motion.span>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.05 }}
+            className="mt-6 text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.02]"
+          >
+            Crack your dream{" "}
+            <span className="shimmer-text">interview</span>
+            <br />
+            with an <span className="text-gradient">AI coach</span> that talks back.
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15 }}
+            className="mt-6 text-lg text-muted-foreground max-w-xl"
+          >
+            Practice realistic HR, technical, and behavioral rounds. Get instant feedback, resume scoring, and
             company-specific prep for TCS, Infosys, Amazon and more.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#" className="btn-clay">
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.25 }}
+            className="mt-8 flex flex-wrap gap-3"
+          >
+            <MagneticButton href="#" className="btn-clay">
               Start free interview <ArrowRight className="w-4 h-4" />
+            </MagneticButton>
+            <a href="#how" className="btn-ghost-clay">
+              See how it works
             </a>
-            <a href="#how" className="btn-ghost-clay">See how it works</a>
-          </div>
-          <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.45 }}
+            className="mt-10 flex items-center gap-6 text-sm text-muted-foreground"
+          >
             <Stat value="50k+" label="Students" />
             <Divider />
-            <Stat value="1M+" label="Questions asked" />
+            <Stat value="1M+" label="Questions" />
             <Divider />
-            <Stat value="4.9★" label="App rating" />
-          </div>
+            <Stat value="4.9★" label="Rating" />
+          </motion.div>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-10 bg-gradient-to-br from-primary/30 to-accent/20 blur-3xl rounded-full" />
-          <div className="relative clay p-6 animate-float">
-            <img
-              src={heroOrb}
-              alt="InterviewBro AI assistant"
-              width={1024}
-              height={1024}
-              className="w-full rounded-2xl"
-            />
-            <FloatingChip className="absolute -top-4 -left-4" icon={<Mic className="w-4 h-4" />} label="Voice mode" />
-            <FloatingChip
-              className="absolute -bottom-4 -right-4"
-              icon={<Trophy className="w-4 h-4 text-accent" />}
-              label="Score: 92"
-            />
-          </div>
-        </div>
-      </div>
+        <HeroOrb />
+      </motion.div>
     </section>
   );
 }
 
-function FloatingChip({
-  icon,
-  label,
+function HeroOrb() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      className="relative aspect-square max-w-[520px] mx-auto w-full"
+    >
+      {/* Orbit ring */}
+      <div className="absolute inset-0 rounded-full border border-primary/20 animate-spin-slow" />
+      <div
+        className="absolute inset-8 rounded-full border border-accent/15 animate-spin-slow"
+        style={{ animationDirection: "reverse", animationDuration: "30s" }}
+      />
+
+      <div className="absolute -inset-10 bg-gradient-to-br from-primary/40 to-accent/30 blur-3xl rounded-full" />
+
+      <motion.div
+        animate={{ y: [0, -14, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        className="relative clay p-5 z-10"
+      >
+        <img
+          src={heroOrb}
+          alt="InterviewBro AI assistant"
+          width={1024}
+          height={1024}
+          className="w-full rounded-2xl"
+        />
+      </motion.div>
+
+      <OrbitChip className="top-2 -left-2" delay={0}>
+        <Mic className="w-4 h-4 text-primary-glow" /> Voice mode
+      </OrbitChip>
+      <OrbitChip className="top-10 -right-4" delay={0.4}>
+        <Trophy className="w-4 h-4 text-accent" /> Score 92
+      </OrbitChip>
+      <OrbitChip className="-bottom-2 left-6" delay={0.8}>
+        <Brain className="w-4 h-4 text-primary-glow" /> Adaptive
+      </OrbitChip>
+      <OrbitChip className="bottom-12 -right-2" delay={1.2}>
+        <FileText className="w-4 h-4 text-success" /> Resume +28%
+      </OrbitChip>
+    </motion.div>
+  );
+}
+
+function OrbitChip({
+  children,
   className = "",
+  delay = 0,
 }: {
-  icon: React.ReactNode;
-  label: string;
+  children: React.ReactNode;
   className?: string;
+  delay?: number;
 }) {
   return (
-    <div className={`clay-sm px-4 py-2.5 flex items-center gap-2 text-sm font-medium ${className}`}>
-      {icon}
-      {label}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.6 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.4 + delay, duration: 0.6, ease: "backOut" }}
+      className={`absolute z-20 ${className}`}
+    >
+      <motion.div
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 4 + delay, repeat: Infinity, ease: "easeInOut" }}
+        className="clay-sm px-3.5 py-2 flex items-center gap-2 text-xs font-medium whitespace-nowrap"
+      >
+        {children}
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -158,68 +323,314 @@ function Divider() {
   return <div className="w-px h-8 bg-border" />;
 }
 
-function Logos() {
-  const items = ["TCS", "Infosys", "Wipro", "Accenture", "Amazon", "Flipkart"];
+/* ---------- Logo marquee ---------- */
+function LogoMarquee() {
+  const items = ["TCS", "Infosys", "Wipro", "Accenture", "Amazon", "Flipkart", "Zoho", "Cognizant", "HCL", "Microsoft"];
   return (
-    <section className="border-y border-border/40 bg-background/40">
-      <div className="mx-auto max-w-7xl px-6 py-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground mr-2">Prep for</p>
-        {items.map((i) => (
-          <span key={i} className="font-display font-semibold text-muted-foreground/80">{i}</span>
-        ))}
+    <section className="relative border-y border-border/40 bg-background/40 backdrop-blur-sm overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6 py-7 flex items-center gap-6">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground shrink-0">Prep for</p>
+        <div className="relative flex-1 overflow-hidden mask-fade">
+          <div className="flex gap-12 animate-marquee whitespace-nowrap will-change-transform">
+            {[...items, ...items].map((i, idx) => (
+              <span key={idx} className="font-display font-semibold text-muted-foreground/80 text-lg">
+                {i}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <style>{`.mask-fade{mask-image:linear-gradient(90deg,transparent,black 10%,black 90%,transparent);}`}</style>
+    </section>
+  );
+}
+
+/* ---------- Live interview demo ---------- */
+function LiveDemo() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+      <SectionHeader
+        eyebrow="Live demo"
+        title={<>Feels like a real <span className="text-gradient">HR round.</span></>}
+        sub="Adaptive questions, follow-ups, and real-time scoring. Try it before you sign up."
+      />
+
+      <div className="mt-14 grid lg:grid-cols-[1.1fr_0.9fr] gap-6">
+        <ChatDemo />
+        <ScoreCard />
       </div>
     </section>
   );
 }
 
-function Features() {
-  const features = [
-    { icon: Brain, title: "Adaptive AI interviewer", desc: "Difficulty adjusts to your answers in real time. No two sessions are the same." },
-    { icon: Mic, title: "Voice & text modes", desc: "Practice speaking out loud or chat — like a real HR conversation." },
-    { icon: FileText, title: "Resume analyzer", desc: "Upload your PDF. Get an ATS score, skills extraction, and tailored questions." },
-    { icon: Trophy, title: "Detailed feedback", desc: "Confidence, communication, grammar, filler words — all scored after each round." },
-    { icon: Briefcase, title: "Company-specific prep", desc: "TCS, Infosys, Amazon question patterns curated by experts." },
-    { icon: Globe2, title: "English, Hindi, Telugu", desc: "Practice in the language you're most comfortable in." },
+function ChatDemo() {
+  const script: { who: "ai" | "you"; text: string }[] = [
+    { who: "ai", text: "Hi! Tell me about a project you're most proud of." },
+    { who: "you", text: "I built a Python tool that scrapes job listings and ranks them." },
+    { who: "ai", text: "Nice. What challenges did you face, and why Python?" },
+    { who: "you", text: "Rate limiting was tough. I chose Python for its scraping ecosystem." },
+    { who: "ai", text: "Good. How would you scale this to 10× the load?" },
+  ];
+
+  const [visible, setVisible] = useState<number>(1);
+  const [typing, setTyping] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    let i = 1;
+
+    const tick = async () => {
+      while (!cancelled && i < script.length) {
+        const msg = script[i];
+        if (msg.who === "ai") {
+          setTyping("");
+          await wait(700);
+          for (let c = 0; c <= msg.text.length; c++) {
+            if (cancelled) return;
+            setTyping(msg.text.slice(0, c));
+            await wait(22);
+          }
+          setVisible((v) => v + 1);
+          setTyping("");
+        } else {
+          await wait(900);
+          setVisible((v) => v + 1);
+        }
+        i++;
+        if (i >= script.length) {
+          await wait(2500);
+          i = 1;
+          setVisible(1);
+        }
+      }
+    };
+    tick();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="clay p-5 md:p-7 relative">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <span className="grid place-items-center w-10 h-10 rounded-2xl clay-sm">
+            <Sparkles className="w-4 h-4 text-primary-glow" />
+          </span>
+          <div>
+            <div className="font-semibold text-sm">Strict HR Round</div>
+            <div className="text-xs text-muted-foreground">SDE Intern · Adaptive · 12:34</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="w-2 h-2 rounded-full bg-success animate-pulse-glow" /> Live
+        </div>
+      </div>
+
+      <div className="space-y-3 min-h-[320px]">
+        {script.slice(0, visible).map((m, i) => (
+          <Bubble key={i} who={m.who} text={m.text} />
+        ))}
+        {typing && <Bubble who="ai" text={typing} typing />}
+      </div>
+
+      <div className="mt-5 flex items-center gap-3 clay-inset px-4 py-3">
+        <Mic className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground flex-1">Tap to record your answer…</span>
+        <button className="btn-clay py-2 px-4 text-xs">
+          <Volume2 className="w-3.5 h-3.5" /> Speak
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Bubble({ who, text, typing }: { who: "ai" | "you"; text: string; typing?: boolean }) {
+  const ai = who === "ai";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`flex ${ai ? "justify-start" : "justify-end"}`}
+    >
+      <div
+        className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed ${
+          ai
+            ? "clay-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-md"
+            : "rounded-tl-2xl rounded-bl-2xl rounded-br-md rounded-tr-2xl text-primary-foreground"
+        }`}
+        style={
+          ai
+            ? undefined
+            : {
+                background: "var(--gradient-primary)",
+                boxShadow: "var(--shadow-clay-sm)",
+              }
+        }
+      >
+        <span className={typing ? "cursor" : undefined}>{text}</span>
+      </div>
+    </motion.div>
+  );
+}
+
+function wait(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
+function ScoreCard() {
+  const scores = [
+    { label: "Confidence", value: 86 },
+    { label: "Communication", value: 92 },
+    { label: "Technical", value: 78 },
+    { label: "Clarity", value: 88 },
   ];
   return (
-    <section id="features" className="mx-auto max-w-7xl px-6 py-28">
+    <div className="clay p-7 flex flex-col">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">Live performance</h3>
+        <span className="text-xs px-2.5 py-1 rounded-full clay-inset text-muted-foreground">Beta</span>
+      </div>
+      <div className="mt-4 flex items-center gap-5">
+        <ScoreRing value={87} />
+        <div>
+          <div className="text-4xl font-display font-bold text-gradient">87</div>
+          <div className="text-sm text-muted-foreground">Overall score</div>
+        </div>
+      </div>
+      <div className="mt-7 space-y-4">
+        {scores.map((s) => (
+          <ScoreBar key={s.label} {...s} />
+        ))}
+      </div>
+      <div className="mt-6 clay-inset p-4 text-xs text-muted-foreground">
+        <span className="text-foreground font-medium">Tip:</span> Slow down on technical answers — your pace was 12%
+        faster than ideal.
+      </div>
+    </div>
+  );
+}
+
+function ScoreRing({ value }: { value: number }) {
+  const r = 38;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative w-24 h-24">
+      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+        <circle cx="50" cy="50" r={r} stroke="oklch(0.28 0.06 278)" strokeWidth="10" fill="none" />
+        <motion.circle
+          cx="50"
+          cy="50"
+          r={r}
+          stroke="url(#g)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          fill="none"
+          initial={{ strokeDasharray: c, strokeDashoffset: c }}
+          whileInView={{ strokeDashoffset: c - (c * value) / 100 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.4, ease: "easeOut" }}
+        />
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="oklch(0.62 0.22 277)" />
+            <stop offset="100%" stopColor="oklch(0.74 0.21 285)" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+function ScoreBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1.5">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}</span>
+      </div>
+      <div className="h-2 rounded-full clay-inset overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: `${value}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="h-full rounded-full"
+          style={{ background: "var(--gradient-primary)" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Features ---------- */
+function Features() {
+  const features = [
+    { icon: Brain, title: "Adaptive AI", desc: "Difficulty shifts in real time — no two sessions are alike." },
+    { icon: Mic, title: "Voice & text", desc: "Practice speaking out loud or chat in the moment." },
+    { icon: FileText, title: "Resume analyzer", desc: "ATS score, skill extraction, and tailored questions." },
+    { icon: Trophy, title: "Detailed feedback", desc: "Confidence, grammar, filler words — all scored." },
+    { icon: Briefcase, title: "Company packs", desc: "TCS, Infosys, Amazon patterns curated by mentors." },
+    { icon: Globe2, title: "English · Hindi · Telugu", desc: "Practice in the language you're most fluent in." },
+  ];
+  return (
+    <section id="features" className="mx-auto max-w-7xl px-6 py-24 md:py-32 relative">
       <SectionHeader
         eyebrow="Features"
         title={<>Everything you need to <span className="text-gradient">land the offer.</span></>}
         sub="Built with the same realism as an actual HR round — minus the awkward silence."
       />
       <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((f) => (
-          <div key={f.title} className="clay p-7 group">
-            <div className="w-12 h-12 rounded-2xl clay-sm grid place-items-center mb-5 group-hover:scale-110 transition-transform">
+        {features.map((f, i) => (
+          <motion.div
+            key={f.title}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, delay: i * 0.06 }}
+            whileHover={{ y: -6 }}
+            className="clay p-7 group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/10 to-accent/10 pointer-events-none" />
+            <div className="w-12 h-12 rounded-2xl clay-sm grid place-items-center mb-5 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
               <f.icon className="w-5 h-5 text-primary-glow" />
             </div>
             <h3 className="text-xl font-semibold">{f.title}</h3>
             <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
+/* ---------- Modes ---------- */
 function Modes() {
   const modes = [
-    { icon: MessageSquare, title: "Friendly practice", desc: "Low pressure, warm-up round.", tag: "Beginner" },
-    { icon: Briefcase, title: "Strict HR", desc: "Tough screener, real-world pace.", tag: "Intermediate" },
+    { icon: MessageSquare, title: "Friendly", desc: "Low pressure, warm-up round.", tag: "Beginner" },
+    { icon: Briefcase, title: "Strict HR", desc: "Tough screener, real pace.", tag: "Intermediate" },
     { icon: Zap, title: "Fast pressure", desc: "Quick-fire, 60s per answer.", tag: "Advanced" },
-    { icon: GraduationCap, title: "Campus placement", desc: "Mass-recruiter style aptitude + HR.", tag: "Popular" },
+    { icon: GraduationCap, title: "Campus", desc: "Mass-recruiter style.", tag: "Popular" },
   ];
   return (
-    <section id="modes" className="mx-auto max-w-7xl px-6 py-28">
+    <section id="modes" className="mx-auto max-w-7xl px-6 py-24 md:py-32">
       <SectionHeader
         eyebrow="Interview modes"
         title={<>Pick your <span className="text-gradient">battlefield.</span></>}
         sub="From relaxed practice to a brutal pressure round — train how you'll fight."
       />
       <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {modes.map((m) => (
-          <div key={m.title} className="clay p-6 flex flex-col">
+        {modes.map((m, i) => (
+          <motion.div
+            key={m.title}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: i * 0.08 }}
+            whileHover={{ y: -6, rotate: -1 }}
+            className="clay p-6 flex flex-col"
+          >
             <div className="flex items-center justify-between mb-5">
               <div className="w-11 h-11 rounded-2xl clay-sm grid place-items-center">
                 <m.icon className="w-5 h-5 text-accent" />
@@ -230,13 +641,14 @@ function Modes() {
             </div>
             <h3 className="font-semibold text-lg">{m.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{m.desc}</p>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
+/* ---------- How it works ---------- */
 function HowItWorks() {
   const steps = [
     { n: "01", title: "Pick role & level", desc: "Choose job role, experience, company type, and mode." },
@@ -244,26 +656,34 @@ function HowItWorks() {
     { n: "03", title: "Get scored & improve", desc: "Confidence, communication, grammar, and weak-area drills." },
   ];
   return (
-    <section id="how" className="mx-auto max-w-7xl px-6 py-28">
+    <section id="howitworks" className="mx-auto max-w-7xl px-6 py-24 md:py-32">
       <SectionHeader
         eyebrow="How it works"
         title={<>Three steps to your <span className="text-gradient">next offer.</span></>}
       />
-      <div className="mt-14 grid md:grid-cols-3 gap-6">
-        {steps.map((s) => (
-          <div key={s.n} className="clay p-8 relative overflow-hidden">
+      <div className="mt-14 grid md:grid-cols-3 gap-6 relative">
+        {steps.map((s, i) => (
+          <motion.div
+            key={s.n}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, delay: i * 0.12 }}
+            className="clay p-8 relative overflow-hidden"
+          >
             <div className="absolute -right-4 -top-6 text-7xl font-display font-bold text-primary/20 select-none">
               {s.n}
             </div>
             <h3 className="text-xl font-semibold">{s.title}</h3>
             <p className="mt-2 text-muted-foreground text-sm">{s.desc}</p>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
+/* ---------- Pricing ---------- */
 function Pricing() {
   const tiers = [
     {
@@ -281,7 +701,7 @@ function Pricing() {
       features: [
         "Unlimited interviews",
         "Voice AI interviewer",
-        "Advanced feedback & analytics",
+        "Advanced feedback",
         "Company-specific prep",
         "All languages",
       ],
@@ -292,23 +712,27 @@ function Pricing() {
       name: "Campus",
       price: "₹499",
       sub: "per semester",
-      features: ["Everything in Pro", "Video interview simulation", "Resume optimization", "Priority AI coach"],
+      features: ["Everything in Pro", "Video simulation", "Resume optimization", "Priority AI coach"],
       cta: "Get Campus",
       highlighted: false,
     },
   ];
   return (
-    <section id="pricing" className="mx-auto max-w-7xl px-6 py-28">
+    <section id="pricing" className="mx-auto max-w-7xl px-6 py-24 md:py-32">
       <SectionHeader
         eyebrow="Pricing"
         title={<>Student-friendly. <span className="text-gradient">No catches.</span></>}
         sub="Cancel anytime. Switch plans anytime."
       />
       <div className="mt-14 grid md:grid-cols-3 gap-6">
-        {tiers.map((t) => (
-          <div
+        {tiers.map((t, i) => (
+          <motion.div
             key={t.name}
-            className={`clay p-8 flex flex-col ${t.highlighted ? "glow-primary" : ""}`}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: i * 0.1 }}
+            className={`clay p-8 flex flex-col relative ${t.highlighted ? "glow-primary scale-[1.02]" : ""}`}
           >
             {t.highlighted && (
               <span className="self-start text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary text-primary-foreground mb-4">
@@ -320,7 +744,7 @@ function Pricing() {
               <span className="text-4xl font-display font-bold">{t.price}</span>
               <span className="text-sm text-muted-foreground">{t.sub}</span>
             </div>
-            <ul className="mt-6 space-y-3 text-sm">
+            <ul className="mt-6 space-y-3 text-sm flex-1">
               {t.features.map((f) => (
                 <li key={f} className="flex items-start gap-2.5">
                   <span className="mt-0.5 w-5 h-5 rounded-full clay-sm grid place-items-center shrink-0">
@@ -330,19 +754,50 @@ function Pricing() {
                 </li>
               ))}
             </ul>
-            <a
+            <MagneticButton
               href="#"
               className={`mt-8 ${t.highlighted ? "btn-clay" : "btn-ghost-clay"}`}
             >
               {t.cta}
-            </a>
-          </div>
+            </MagneticButton>
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
+/* ---------- CTA ---------- */
+function CTA() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-24">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="clay p-10 md:p-16 text-center relative overflow-hidden glow-primary"
+      >
+        <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
+        <h2 className="relative text-4xl md:text-5xl font-bold leading-tight">
+          Your next interview <br className="md:hidden" />
+          <span className="text-gradient">starts in 60 seconds.</span>
+        </h2>
+        <p className="relative mt-4 text-muted-foreground max-w-xl mx-auto">
+          No credit card. No spam. Just you, the AI, and your first scored round.
+        </p>
+        <div className="relative mt-8 flex justify-center gap-3 flex-wrap">
+          <MagneticButton href="#" className="btn-clay">
+            Start free interview <ArrowRight className="w-4 h-4" />
+          </MagneticButton>
+          <a href="#pricing" className="btn-ghost-clay">See pricing</a>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+/* ---------- Section header ---------- */
 function SectionHeader({
   eyebrow,
   title,
@@ -353,17 +808,24 @@ function SectionHeader({
   sub?: string;
 }) {
   return (
-    <div className="max-w-2xl mx-auto text-center">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6 }}
+      className="max-w-2xl mx-auto text-center"
+    >
       <span className="text-xs uppercase tracking-[0.2em] text-primary-glow font-semibold">{eyebrow}</span>
       <h2 className="mt-3 text-4xl md:text-5xl font-bold leading-tight">{title}</h2>
       {sub && <p className="mt-4 text-muted-foreground">{sub}</p>}
-    </div>
+    </motion.div>
   );
 }
 
+/* ---------- Footer ---------- */
 function Footer() {
   return (
-    <footer className="border-t border-border/40 mt-10">
+    <footer className="border-t border-border/40 mt-10 relative z-10">
       <div className="mx-auto max-w-7xl px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="grid place-items-center w-8 h-8 rounded-xl clay-sm">
