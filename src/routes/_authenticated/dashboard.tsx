@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
 import { motion } from "motion/react";
 import {
   Flame,
@@ -12,6 +14,8 @@ import {
   MessageSquare,
   Briefcase,
   GraduationCap,
+  ChevronRight,
+  Wand2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +30,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const userId = user!.id;
+  const qc = useQueryClient();
+  const [running, setRunning] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
@@ -41,7 +47,7 @@ function Dashboard() {
   });
 
   const { data: sessions } = useQuery({
-    queryKey: ["sessions", userId],
+    queryKey: ["sessions", userId, "recent"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("interview_sessions")
@@ -60,8 +66,63 @@ function Dashboard() {
   const level = profile?.level ?? 1;
   const streak = profile?.current_streak ?? 0;
   const xpForNext = level * 500;
-  const xpInLevel = xp % xpForNext;
-  const xpPct = Math.min(100, (xpInLevel / xpForNext) * 100);
+  const xpInLevel = xp % 500;
+  const xpPct = Math.min(100, (xpInLevel / 500) * 100);
+
+  const runDemoSession = async () => {
+    setRunning(true);
+    try {
+      const jobRole = profile?.default_job_role || "Software Engineer";
+      const experience = profile?.default_experience_level || "fresher";
+      const mode = profile?.default_interview_mode || "friendly";
+
+      const overall = 60 + Math.floor(Math.random() * 35);
+      const confidence = 55 + Math.floor(Math.random() * 40);
+      const communication = 55 + Math.floor(Math.random() * 40);
+      const technical = 50 + Math.floor(Math.random() * 45);
+      const duration = 240 + Math.floor(Math.random() * 600);
+
+      const { data: created, error: createErr } = await supabase
+        .from("interview_sessions")
+        .insert({
+          user_id: userId,
+          job_role: jobRole,
+          experience_level: experience,
+          mode,
+          interview_type: "mixed",
+          language: profile?.preferred_language ?? "en",
+          status: "in_progress",
+        })
+        .select("id")
+        .single();
+      if (createErr) throw createErr;
+
+      const { error: rpcErr } = await supabase.rpc("complete_interview_session", {
+        p_session: created.id,
+        p_overall: overall,
+        p_confidence: confidence,
+        p_communication: communication,
+        p_technical: technical,
+        p_duration: duration,
+        p_feedback: {
+          strengths: ["Clear structure", "Good examples"],
+          improvements: ["Slow down on technical answers", "Quantify impact"],
+          summary: "Solid round — keep practicing system-design style questions.",
+        },
+      });
+      if (rpcErr) throw rpcErr;
+
+      toast.success(`+${50 + overall} XP earned!`);
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+      qc.invalidateQueries({ queryKey: ["sessions", userId, "recent"] });
+      qc.invalidateQueries({ queryKey: ["sessions", userId, "all"] });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      toast.error(msg);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
@@ -93,19 +154,37 @@ function Dashboard() {
             Ready for today's round? Keep the streak alive.
           </p>
         </div>
-        <button
-          className="btn-clay self-start md:self-auto"
-          onClick={() => alert("Mock interview flow coming in Phase 3!")}
-        >
-          <Play className="w-4 h-4" /> Start new interview
-        </button>
+        <div className="flex flex-wrap gap-2 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={runDemoSession}
+            disabled={running}
+            className="btn-ghost-clay"
+            title="Simulate a completed session to test XP, streak and history"
+          >
+            <Wand2 className="w-4 h-4" />
+            {running ? "Running…" : "Run demo session"}
+          </button>
+          <button
+            className="btn-clay"
+            onClick={() => toast("Mock interview flow lands in Phase 3 — use Run demo for now.")}
+          >
+            <Play className="w-4 h-4" /> Start new interview
+          </button>
+        </div>
       </motion.div>
 
       {/* Stats */}
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Flame} label="Current streak" value={`${streak} days`} accent />
-        <StatCard icon={Zap} label="Level" value={`Lvl ${level}`} sub={`${xpInLevel} / ${xpForNext} XP`} pct={xpPct} />
-        <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} />
+        <StatCard
+          icon={Zap}
+          label="Level"
+          value={`Lvl ${level}`}
+          sub={`${xpInLevel} / 500 XP to Lvl ${level + 1}`}
+          pct={xpPct}
+        />
+        <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} sub={`Next: ${xpForNext}`} />
         <StatCard icon={Target} label="Sessions" value={String(sessions?.length ?? 0)} />
       </div>
 
@@ -121,7 +200,7 @@ function Dashboard() {
             <motion.button
               key={c.title}
               type="button"
-              onClick={() => alert("Mock interview flow coming in Phase 3!")}
+              onClick={() => toast("Mock interview flow lands in Phase 3.")}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.06 }}
@@ -145,7 +224,12 @@ function Dashboard() {
       <section className="mt-10">
         <div className="flex items-end justify-between mb-4">
           <h2 className="text-xl font-semibold">Recent interviews</h2>
-          <span className="text-xs text-muted-foreground">{sessions?.length ?? 0} total</span>
+          <Link
+            to="/history"
+            className="text-xs text-muted-foreground hover:text-foreground transition inline-flex items-center gap-1"
+          >
+            View all <ChevronRight className="w-3 h-3" />
+          </Link>
         </div>
         {!sessions || sessions.length === 0 ? (
           <div className="clay p-10 text-center">
@@ -154,24 +238,26 @@ function Dashboard() {
             </div>
             <h3 className="mt-4 font-semibold">No interviews yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Start your first mock round to see scores and feedback here.
+              Hit “Run demo session” to see how scores, XP and streak update.
             </p>
           </div>
         ) : (
           <div className="clay p-2">
             <div className="clay-inset rounded-xl divide-y divide-border/30">
               {sessions.map((s) => (
-                <div
+                <Link
                   key={s.id}
-                  className="flex items-center justify-between p-4 hover:bg-foreground/[0.02] transition"
+                  to="/sessions/$sessionId"
+                  params={{ sessionId: s.id }}
+                  className="flex items-center justify-between gap-3 p-4 hover:bg-foreground/[0.03] transition group"
                 >
-                  <div>
-                    <div className="font-medium text-sm">{s.job_role}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm truncate">{s.job_role}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
                       {s.experience_level} · {s.interview_type} · {s.mode}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     {s.overall_score != null && (
                       <span className="clay-sm px-2.5 py-1 rounded-full text-xs flex items-center gap-1">
                         <Trophy className="w-3 h-3 text-accent" />
@@ -184,8 +270,9 @@ function Dashboard() {
                         month: "short",
                       })}
                     </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition" />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
