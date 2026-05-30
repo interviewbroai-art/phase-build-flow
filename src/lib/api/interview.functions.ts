@@ -28,11 +28,38 @@ async function callGateway(body: unknown): Promise<string> {
   return json.choices?.[0]?.message?.content ?? "";
 }
 
+function difficultyLine(d: string) {
+  switch (d) {
+    case "easy":
+      return "Difficulty: EASY — warm-up level. Stick to definitions, basic concepts, simple project walk-throughs.";
+    case "hard":
+      return "Difficulty: HARD — senior-bar questions. Push on trade-offs, edge cases, scaling, ownership, real numbers.";
+    case "brutal":
+      return "Difficulty: BRUTAL — FAANG/top-product bar. Ruthless follow-ups, system design, ambiguity, stress tests. If an answer is hand-wavy, call it out and ask for specifics.";
+    default:
+      return "Difficulty: MEDIUM — standard interview bar. Mix of definitions, scenarios, and one or two probing questions.";
+  }
+}
+
+function depthLine(d: string) {
+  switch (d) {
+    case "shallow":
+      return "Depth: SHALLOW — broad coverage. Move topic after one answer. Minimal follow-ups.";
+    case "deep":
+      return "Depth: DEEP — after each candidate answer, ask 1–2 sharp follow-ups before changing topic. Drill into 'why', 'how', 'what would you do if…', concrete examples, and numbers. Do not change topic until the area is truly explored.";
+    default:
+      return "Depth: MODERATE — usually one follow-up per topic before moving on.";
+  }
+}
+
 function systemPrompt(opts: {
   jobRole: string;
   experience: string;
   mode: string;
   language: string;
+  difficulty: string;
+  depth: string;
+  resumeSummary?: string | null;
 }) {
   const tone =
     opts.mode === "strict"
@@ -42,33 +69,38 @@ function systemPrompt(opts: {
       : "You are a warm, encouraging senior interviewer who helps the candidate feel comfortable while still going deep.";
 
   const langLine =
-    opts.language === "hi"
+    opts.language === "hi" || opts.language === "hinglish"
       ? "Language: natural Hinglish — mix Hindi and English the way Indian students actually speak. Keep technical terms in English."
       : "Language: clear, professional Indian English.";
+
+  const resumeBlock = opts.resumeSummary?.trim()
+    ? `\nCandidate background (from their resume):\n${opts.resumeSummary.trim()}\n\nUse this — reference their real projects, skills, and experience in at least 3 questions. Probe claims and ask for specifics from the resume.`
+    : "";
 
   return `You are conducting a realistic mock interview for a ${opts.experience} candidate applying for a ${opts.jobRole} role in India.
 
 ${tone}
 ${langLine}
+${difficultyLine(opts.difficulty)}
+${depthLine(opts.depth)}
+${resumeBlock}
 
 How to ask questions:
 - Ask exactly ONE question per turn. Keep it crisp — ideally 1–3 sentences.
 - Build naturally on the candidate's previous answer. If they said something interesting, vague, or weak, follow up on THAT instead of jumping to a brand new topic.
-- Vary the mix across the round: introduction / background, behavioural (STAR-style: tell me about a time…), situational ("what would you do if…"), role-specific technical / conceptual, problem-solving, and 1–2 HR / culture-fit questions near the end.
-- Calibrate difficulty to "${opts.experience}". For fresher / intern, stay on fundamentals, projects, internships, college work. For experienced, go into system design, trade-offs, leadership, ownership, metrics.
+- Vary the mix across the round: introduction / background, behavioural (STAR-style), situational, role-specific technical / conceptual, problem-solving, and 1–2 HR / culture-fit questions near the end.
+- Calibrate to "${opts.experience}". For fresher / intern, stay on fundamentals, college projects, internships. For experienced, go into system design, trade-offs, leadership, ownership, metrics.
 - Make questions specific to "${opts.jobRole}" — reference real tools, concepts, scenarios from that role. Avoid generic filler.
-- Occasionally ask the candidate to walk through their thinking out loud, give an example, or quantify impact.
 
 What NOT to do:
 - Do NOT give the answer, hints, model solutions, or evaluative commentary during the round.
-- Do NOT say things like "Great answer", "Good point", "Next question:", "Let's move on" — just ask the next question directly.
+- Do NOT say "Great answer", "Good point", "Next question:", "Let's move on" — just ask the next question.
 - Do NOT number the questions.
 - Do NOT ask more than one question at a time.
-- Do NOT repeat a question that's already been asked.
+- Do NOT repeat a question already asked.
 
 Respond with ONLY the next question text. Nothing else.`;
 }
-
 
 export const interviewChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -77,7 +109,10 @@ export const interviewChat = createServerFn({ method: "POST" })
       jobRole: z.string().min(1).max(120),
       experience: z.string().min(1).max(40),
       mode: z.string().min(1).max(20),
-      language: z.string().min(1).max(10),
+      language: z.string().min(1).max(20),
+      difficulty: z.enum(["easy", "medium", "hard", "brutal"]).default("medium"),
+      depth: z.enum(["shallow", "moderate", "deep"]).default("moderate"),
+      resumeSummary: z.string().max(4000).nullish(),
       history: z
         .array(
           z.object({
@@ -85,8 +120,8 @@ export const interviewChat = createServerFn({ method: "POST" })
             content: z.string().min(1).max(4000),
           }),
         )
-        .max(40),
-      questionNumber: z.number().int().min(1).max(20),
+        .max(60),
+      questionNumber: z.number().int().min(1).max(30),
     }),
   )
   .handler(async ({ data }) => {
@@ -108,6 +143,45 @@ export const interviewChat = createServerFn({ method: "POST" })
     return { question: content.trim(), number: data.questionNumber };
   });
 
+export const summarizeResume = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      resumeText: z.string().min(20).max(20000),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const sys = `You compress a candidate's resume into a tight, interviewer-friendly briefing.
+Return ONLY plain text (no markdown), 120–200 words, with these labelled sections, each one short paragraph:
+Role target: ...
+Experience: ...
+Key skills: ...
+Notable projects: ...
+Achievements / numbers: ...
+Red flags / gaps: ...
+Probe areas: ...`;
+
+    const summary = (
+      await callGateway({
+        model: MODEL,
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: data.resumeText.slice(0, 20000) },
+        ],
+        stream: false,
+      })
+    ).trim();
+
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ resume_text: data.resumeText, resume_summary: summary })
+      .eq("id", (await supabase.auth.getUser()).data.user!.id);
+    if (error) throw new Error(error.message);
+
+    return { summary };
+  });
+
 export const scoreInterview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
@@ -115,6 +189,7 @@ export const scoreInterview = createServerFn({ method: "POST" })
       sessionId: z.string().uuid(),
       jobRole: z.string().min(1).max(120),
       experience: z.string().min(1).max(40),
+      difficulty: z.enum(["easy", "medium", "hard", "brutal"]).default("medium"),
       durationSeconds: z.number().int().min(0).max(60 * 60 * 3),
       transcript: z
         .array(
@@ -124,24 +199,36 @@ export const scoreInterview = createServerFn({ method: "POST" })
           }),
         )
         .min(1)
-        .max(60),
+        .max(120),
     }),
   )
   .handler(async ({ data, context }) => {
     const transcriptText = data.transcript
-      .map((m) => `${m.role === "assistant" ? "Interviewer" : "Candidate"}: ${m.content}`)
+      .map((m, i) => `[${i + 1}] ${m.role === "assistant" ? "Interviewer" : "Candidate"}: ${m.content}`)
       .join("\n\n");
 
-    const sys = `You are an interview evaluator. Score the candidate's performance honestly.
-Return ONLY valid JSON matching this schema (no markdown, no commentary):
+    const sys = `You are a senior interview evaluator scoring at "${data.difficulty}" bar.
+Be honest and specific — no flattery. For weak answers, score low.
+Return ONLY valid JSON (no markdown, no commentary) matching this schema EXACTLY:
 {
   "overall": number 0-100,
   "confidence": number 0-100,
   "communication": number 0-100,
   "technical": number 0-100,
-  "strengths": string[] (2-4 items),
-  "improvements": string[] (2-4 items),
-  "summary": string (2-3 sentences, plain text)
+  "strengths": string[] (2-4 short items),
+  "improvements": string[] (2-4 short items),
+  "summary": string (3-4 sentences, plain text, direct feedback addressed to the candidate),
+  "questionFeedback": [
+    {
+      "question": string (paraphrased interviewer question, max 140 chars),
+      "answer": string (paraphrased candidate answer, max 200 chars; "(no answer)" if missing),
+      "score": number 0-100,
+      "verdict": "weak" | "ok" | "good" | "excellent",
+      "comment": string (1-2 sentences, what was good or missing),
+      "modelAnswer": string (2-4 sentences of an ideal answer the candidate could have given)
+    }
+  ] (one entry per interviewer question, in order),
+  "actionPlan": string[] (3-5 concrete next-step actions, each starts with a verb)
 }`;
 
     const raw = await callGateway({
@@ -150,14 +237,21 @@ Return ONLY valid JSON matching this schema (no markdown, no commentary):
         { role: "system", content: sys },
         {
           role: "user",
-          content: `Role: ${data.jobRole} (${data.experience})\n\nTranscript:\n${transcriptText}`,
+          content: `Role: ${data.jobRole} (${data.experience}) · Difficulty: ${data.difficulty}\n\nTranscript:\n${transcriptText}`,
         },
       ],
       stream: false,
     });
 
-    // Extract JSON
-    let parsed: {
+    type QFB = {
+      question: string;
+      answer: string;
+      score: number;
+      verdict: string;
+      comment: string;
+      modelAnswer: string;
+    };
+    type Parsed = {
       overall: number;
       confidence: number;
       communication: number;
@@ -165,21 +259,27 @@ Return ONLY valid JSON matching this schema (no markdown, no commentary):
       strengths: string[];
       improvements: string[];
       summary: string;
+      questionFeedback: QFB[];
+      actionPlan: string[];
     };
+
+    let parsed: Parsed;
     try {
       const cleaned = raw.replace(/```json|```/g, "").trim();
       const start = cleaned.indexOf("{");
       const end = cleaned.lastIndexOf("}");
-      parsed = JSON.parse(cleaned.slice(start, end + 1));
+      parsed = JSON.parse(cleaned.slice(start, end + 1)) as Parsed;
     } catch {
       parsed = {
-        overall: 65,
-        confidence: 65,
-        communication: 65,
-        technical: 60,
+        overall: 60,
+        confidence: 60,
+        communication: 60,
+        technical: 55,
         strengths: ["Engaged through the round"],
-        improvements: ["Could not parse AI scoring — try again"],
+        improvements: ["Scoring AI returned unparseable output — try again"],
         summary: "Scoring fell back to defaults due to a parsing error.",
+        questionFeedback: [],
+        actionPlan: ["Retry the interview to get full feedback"],
       };
     }
 
@@ -201,6 +301,8 @@ Return ONLY valid JSON matching this schema (no markdown, no commentary):
         strengths: parsed.strengths ?? [],
         improvements: parsed.improvements ?? [],
         summary: parsed.summary ?? "",
+        questionFeedback: parsed.questionFeedback ?? [],
+        actionPlan: parsed.actionPlan ?? [],
         transcript: data.transcript,
       },
     });

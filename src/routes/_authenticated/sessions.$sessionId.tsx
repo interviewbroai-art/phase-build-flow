@@ -92,9 +92,24 @@ function SessionDetailPage() {
     qc.invalidateQueries({ queryKey: ["session", sessionId] });
   };
 
+  type QFB = {
+    question: string;
+    answer: string;
+    score: number;
+    verdict: string;
+    comment: string;
+    modelAnswer: string;
+  };
   const feedback = (s?.feedback ?? null) as
-    | { summary?: string; strengths?: string[]; improvements?: string[] }
+    | {
+        summary?: string;
+        strengths?: string[];
+        improvements?: string[];
+        questionFeedback?: QFB[];
+        actionPlan?: string[];
+      }
     | null;
+
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-4xl mx-auto">

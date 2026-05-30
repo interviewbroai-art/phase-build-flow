@@ -1,11 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { User as UserIcon, ImageIcon, Save, Sparkles, Upload, Trash2, ArrowLeft } from "lucide-react";
+import {
+  User as UserIcon,
+  ImageIcon,
+  Save,
+  Sparkles,
+  Upload,
+  Trash2,
+  ArrowLeft,
+  FileText,
+  Wand2,
+  Flame,
+  Layers,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { summarizeResume } from "@/lib/api/interview.functions";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — InterviewBro AI" }] }),
@@ -37,6 +52,19 @@ const EXPERIENCE = [
 const inputCls =
   "w-full clay-inset px-4 py-3 text-sm bg-transparent outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60";
 
+const DIFFICULTIES = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+  { value: "brutal", label: "Brutal" },
+] as const;
+
+const DEPTHS = [
+  { value: "shallow", label: "Shallow" },
+  { value: "moderate", label: "Moderate" },
+  { value: "deep", label: "Deep" },
+] as const;
+
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
 
 function SettingsPage() {
@@ -44,6 +72,8 @@ function SettingsPage() {
   const userId = user!.id;
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const summarizeFn = useServerFn(summarizeResume);
+
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", userId],
@@ -64,6 +94,11 @@ function SettingsPage() {
   const [jobRole, setJobRole] = useState("");
   const [experience, setExperience] = useState("fresher");
   const [mode, setMode] = useState("friendly");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [depth, setDepth] = useState("moderate");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeSummary, setResumeSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -75,6 +110,10 @@ function SettingsPage() {
     setJobRole(profile.default_job_role ?? "");
     setExperience(profile.default_experience_level ?? "fresher");
     setMode(profile.default_interview_mode ?? "friendly");
+    setDifficulty(profile.default_difficulty ?? "medium");
+    setDepth(profile.default_depth ?? "moderate");
+    setResumeText(profile.resume_text ?? "");
+    setResumeSummary(profile.resume_summary ?? "");
   }, [profile]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -89,6 +128,9 @@ function SettingsPage() {
         default_job_role: jobRole.trim() || null,
         default_experience_level: experience,
         default_interview_mode: mode,
+        default_difficulty: difficulty,
+        default_depth: depth,
+        resume_text: resumeText.trim() || null,
       })
       .eq("id", userId);
     setSaving(false);
@@ -98,6 +140,7 @@ function SettingsPage() {
     }
     toast.success("Profile updated");
     qc.invalidateQueries({ queryKey: ["profile", userId] });
+
   };
 
   const onAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +196,28 @@ function SettingsPage() {
     qc.invalidateQueries({ queryKey: ["profile", userId] });
     toast.success("Avatar removed");
   };
+
+  const handleSummarize = async () => {
+    const text = resumeText.trim();
+    if (text.length < 20) {
+      toast.error("Paste at least a few sentences of your resume");
+      return;
+    }
+    setSummarizing(true);
+    const toastId = toast.loading("Reading your resume…");
+    try {
+      const res = await summarizeFn({ data: { resumeText: text } });
+      setResumeSummary(res.summary);
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+      qc.invalidateQueries({ queryKey: ["profile", "resume-summary"] });
+      toast.success("Resume summary ready", { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to summarize", { id: toastId });
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
 
   const initials = (displayName || user?.email || "U")
     .split(" ")
@@ -325,7 +390,51 @@ function SettingsPage() {
                 ))}
               </select>
             </Field>
+            <Field label={<span className="inline-flex items-center gap-1"><Flame className="w-3 h-3" /> Default difficulty</span>}>
+              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={inputCls} disabled={isLoading}>
+                {DIFFICULTIES.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-background">{o.label}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label={<span className="inline-flex items-center gap-1"><Layers className="w-3 h-3" /> Default depth</span>}>
+              <select value={depth} onChange={(e) => setDepth(e.target.value)} className={inputCls} disabled={isLoading}>
+                {DEPTHS.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-background">{o.label}</option>
+                ))}
+              </select>
+            </Field>
           </div>
+        </section>
+
+        {/* Resume */}
+        <section className="clay p-6">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary-glow" /> Your resume
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Paste your resume — the AI will reference your real projects, skills and experience.
+              </p>
+            </div>
+            <button type="button" className="btn-ghost-clay text-xs" onClick={handleSummarize} disabled={summarizing}>
+              <Wand2 className="w-3.5 h-3.5" /> {summarizing ? "Reading…" : "Summarize with AI"}
+            </button>
+          </div>
+          <textarea
+            value={resumeText}
+            onChange={(e) => setResumeText(e.target.value)}
+            placeholder="Paste your resume here — education, projects, internships, skills, achievements…"
+            className={inputCls + " mt-4 min-h-[200px] resize-y"}
+            maxLength={20000}
+          />
+          {resumeSummary && (
+            <div className="mt-4 clay-inset rounded-2xl p-4">
+              <div className="text-[10px] uppercase tracking-widest text-primary-glow mb-2">AI summary (used by interviewer)</div>
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap">{resumeSummary}</p>
+            </div>
+          )}
         </section>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -342,7 +451,7 @@ function SettingsPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -352,3 +461,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+

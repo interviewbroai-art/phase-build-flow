@@ -21,6 +21,8 @@ export type Database = {
           completed_at: string | null
           confidence_score: number | null
           created_at: string
+          depth: string
+          difficulty: string
           duration_seconds: number
           experience_level: string
           feedback: Json | null
@@ -41,6 +43,8 @@ export type Database = {
           completed_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          depth?: string
+          difficulty?: string
           duration_seconds?: number
           experience_level: string
           feedback?: Json | null
@@ -61,6 +65,8 @@ export type Database = {
           completed_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          depth?: string
+          difficulty?: string
           duration_seconds?: number
           experience_level?: string
           feedback?: Json | null
@@ -82,6 +88,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_streak: number
+          default_depth: string
+          default_difficulty: string
           default_experience_level: string | null
           default_interview_mode: string
           default_job_role: string | null
@@ -92,6 +100,8 @@ export type Database = {
           longest_streak: number
           onboarding_completed: boolean
           preferred_language: string
+          resume_summary: string | null
+          resume_text: string | null
           updated_at: string
           xp: number
         }
@@ -99,6 +109,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number
+          default_depth?: string
+          default_difficulty?: string
           default_experience_level?: string | null
           default_interview_mode?: string
           default_job_role?: string | null
@@ -109,6 +121,8 @@ export type Database = {
           longest_streak?: number
           onboarding_completed?: boolean
           preferred_language?: string
+          resume_summary?: string | null
+          resume_text?: string | null
           updated_at?: string
           xp?: number
         }
@@ -116,6 +130,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number
+          default_depth?: string
+          default_difficulty?: string
           default_experience_level?: string | null
           default_interview_mode?: string
           default_job_role?: string | null
@@ -126,6 +142,8 @@ export type Database = {
           longest_streak?: number
           onboarding_completed?: boolean
           preferred_language?: string
+          resume_summary?: string | null
+          resume_text?: string | null
           updated_at?: string
           xp?: number
         }
@@ -142,6 +160,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_streak: number
+          default_depth: string
+          default_difficulty: string
           default_experience_level: string | null
           default_interview_mode: string
           default_job_role: string | null
@@ -152,6 +172,8 @@ export type Database = {
           longest_streak: number
           onboarding_completed: boolean
           preferred_language: string
+          resume_summary: string | null
+          resume_text: string | null
           updated_at: string
           xp: number
         }
@@ -176,6 +198,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_streak: number
+          default_depth: string
+          default_difficulty: string
           default_experience_level: string | null
           default_interview_mode: string
           default_job_role: string | null
@@ -186,6 +210,8 @@ export type Database = {
           longest_streak: number
           onboarding_completed: boolean
           preferred_language: string
+          resume_summary: string | null
+          resume_text: string | null
           updated_at: string
           xp: number
         }

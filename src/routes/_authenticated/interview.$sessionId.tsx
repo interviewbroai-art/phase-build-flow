@@ -36,6 +36,18 @@ function InterviewRoomPage() {
     },
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", "resume-summary"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("resume_summary")
+        .maybeSingle();
+      return data;
+    },
+  });
+
+
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -83,6 +95,9 @@ function InterviewRoomPage() {
           experience: session.experience_level,
           mode: session.mode,
           language: session.language,
+          difficulty: (session.difficulty ?? "medium") as "easy" | "medium" | "hard" | "brutal",
+          depth: (session.depth ?? "moderate") as "shallow" | "moderate" | "deep",
+          resumeSummary: profile?.resume_summary ?? null,
           history,
           questionNumber: askedRef.current + 1,
         },
@@ -95,6 +110,7 @@ function InterviewRoomPage() {
       setThinking(false);
     }
   };
+
 
   const sendAnswer = async () => {
     const text = input.trim();
@@ -125,10 +141,12 @@ function InterviewRoomPage() {
           sessionId,
           jobRole: session!.job_role,
           experience: session!.experience_level,
+          difficulty: (session!.difficulty ?? "medium") as "easy" | "medium" | "hard" | "brutal",
           durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
           transcript: tr,
         },
       });
+
       toast.success("Interview complete! XP awarded.", { id: toastId });
       navigate({ to: "/sessions/$sessionId", params: { sessionId }, replace: true });
     } catch (e) {
