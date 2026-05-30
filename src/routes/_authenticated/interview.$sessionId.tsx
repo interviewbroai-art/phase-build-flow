@@ -371,7 +371,10 @@ function InterviewRoomPage() {
         <div className="flex items-end gap-2">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              interimRef.current = e.target.value;
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -379,12 +382,30 @@ function InterviewRoomPage() {
               }
             }}
             placeholder={
-              thinking ? "Interviewer is thinking…" : ending ? "Scoring…" : "Type your answer… (Shift+Enter for newline)"
+              thinking
+                ? "Interviewer is thinking…"
+                : ending
+                ? "Scoring…"
+                : listening
+                ? "Listening… speak your answer"
+                : "Type your answer… (Shift+Enter for newline)"
             }
             disabled={thinking || ending}
             rows={2}
             className="flex-1 clay-inset px-4 py-3 text-sm bg-transparent outline-none resize-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60 disabled:opacity-60"
           />
+          {voiceSupported.stt && (
+            <button
+              type="button"
+              onClick={toggleListening}
+              disabled={thinking || ending}
+              className={"btn-ghost-clay h-12 px-4 shrink-0 " + (listening ? "ring-1 ring-accent/60 text-accent" : "")}
+              aria-label={listening ? "Stop listening" : "Speak your answer"}
+              title={listening ? "Stop listening" : "Speak your answer"}
+            >
+              {listening ? <MicOff className="w-4 h-4 animate-pulse" /> : <Mic className="w-4 h-4" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={sendAnswer}
@@ -395,6 +416,12 @@ function InterviewRoomPage() {
             <Send className="w-4 h-4" />
           </button>
         </div>
+        {listening && (
+          <div className="px-3 pt-2 pb-1 text-[10px] text-muted-foreground inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Listening — tap the mic again to stop.
+          </div>
+        )}
       </div>
     </div>
   );
