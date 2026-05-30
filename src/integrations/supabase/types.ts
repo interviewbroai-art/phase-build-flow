@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      interview_sessions: {
+        Row: {
+          communication_score: number | null
+          company_type: string | null
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string
+          duration_seconds: number
+          experience_level: string
+          feedback: Json | null
+          id: string
+          interview_type: string
+          job_role: string
+          language: string
+          mode: string
+          overall_score: number | null
+          status: string
+          technical_score: number | null
+          user_id: string
+        }
+        Insert: {
+          communication_score?: number | null
+          company_type?: string | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          duration_seconds?: number
+          experience_level: string
+          feedback?: Json | null
+          id?: string
+          interview_type: string
+          job_role: string
+          language?: string
+          mode?: string
+          overall_score?: number | null
+          status?: string
+          technical_score?: number | null
+          user_id: string
+        }
+        Update: {
+          communication_score?: number | null
+          company_type?: string | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          duration_seconds?: number
+          experience_level?: string
+          feedback?: Json | null
+          id?: string
+          interview_type?: string
+          job_role?: string
+          language?: string
+          mode?: string
+          overall_score?: number | null
+          status?: string
+          technical_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          current_streak: number
+          display_name: string | null
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          onboarding_completed: boolean
+          preferred_language: string
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          current_streak?: number
+          display_name?: string | null
+          id: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          onboarding_completed?: boolean
+          preferred_language?: string
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          current_streak?: number
+          display_name?: string | null
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          onboarding_completed?: boolean
+          preferred_language?: string
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
