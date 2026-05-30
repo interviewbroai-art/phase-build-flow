@@ -48,8 +48,7 @@ function AuthenticatedLayout() {
   // Onboarding gate: send to /onboarding if not completed and not already there
   const needsOnboarding =
     !profileLoading &&
-    profile?.onboarding_completed === false &&
-    !profile.onboarding_completed &&
+    (!profile || profile.onboarding_completed === false) &&
     location.pathname !== "/onboarding";
 
   if (needsOnboarding) {
