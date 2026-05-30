@@ -94,6 +94,11 @@ function SettingsPage() {
   const [jobRole, setJobRole] = useState("");
   const [experience, setExperience] = useState("fresher");
   const [mode, setMode] = useState("friendly");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [depth, setDepth] = useState("moderate");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeSummary, setResumeSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -105,6 +110,10 @@ function SettingsPage() {
     setJobRole(profile.default_job_role ?? "");
     setExperience(profile.default_experience_level ?? "fresher");
     setMode(profile.default_interview_mode ?? "friendly");
+    setDifficulty(profile.default_difficulty ?? "medium");
+    setDepth(profile.default_depth ?? "moderate");
+    setResumeText(profile.resume_text ?? "");
+    setResumeSummary(profile.resume_summary ?? "");
   }, [profile]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -119,6 +128,9 @@ function SettingsPage() {
         default_job_role: jobRole.trim() || null,
         default_experience_level: experience,
         default_interview_mode: mode,
+        default_difficulty: difficulty,
+        default_depth: depth,
+        resume_text: resumeText.trim() || null,
       })
       .eq("id", userId);
     setSaving(false);
@@ -128,6 +140,7 @@ function SettingsPage() {
     }
     toast.success("Profile updated");
     qc.invalidateQueries({ queryKey: ["profile", userId] });
+
   };
 
   const onAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
