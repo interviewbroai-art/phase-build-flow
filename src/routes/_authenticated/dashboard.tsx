@@ -200,7 +200,7 @@ function Dashboard() {
             </div>
             <h3 className="mt-4 font-semibold">No interviews yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Hit "Run demo session" to see XP, streak and history update.
+              Start your first interview to begin earning XP and building a streak.
             </p>
           </div>
         ) : (
