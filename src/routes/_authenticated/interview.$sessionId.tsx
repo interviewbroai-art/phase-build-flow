@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/interview/$sessionId")({
   component: InterviewRoomPage,
 });
 
-const TOTAL_QUESTIONS = 5;
+const TOTAL_QUESTIONS = 10;
 
 type Turn = { role: "user" | "assistant"; content: string };
 
