@@ -222,29 +222,28 @@ function Dashboard() {
         <h2 className="text-xl font-semibold mb-4">Jump back in</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { icon: MessageSquare, title: "Friendly practice", desc: "Warm up with low-pressure questions." },
-            { icon: Briefcase, title: "Strict HR round", desc: "Real recruiter pace and follow-ups." },
-            { icon: GraduationCap, title: "Campus placement", desc: "Aptitude + HR, mass-recruiter style." },
+            { icon: MessageSquare, title: "Friendly practice", desc: "Warm up with low-pressure questions.", mode: "friendly" },
+            { icon: Briefcase, title: "Strict HR round", desc: "Real recruiter pace and follow-ups.", mode: "strict" },
+            { icon: GraduationCap, title: "Campus placement", desc: "Aptitude + HR, mass-recruiter style.", mode: "campus" },
           ].map((c, i) => (
-            <motion.button
+            <motion.div
               key={c.title}
-              type="button"
-              onClick={() => toast("Mock interview flow lands in Phase 3.")}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.06 }}
               whileHover={{ y: -4 }}
-              className="clay p-6 text-left group"
             >
-              <div className="w-11 h-11 rounded-2xl clay-sm grid place-items-center mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform">
-                <c.icon className="w-5 h-5 text-primary-glow" />
-              </div>
-              <div className="font-semibold">{c.title}</div>
-              <div className="text-sm text-muted-foreground mt-1">{c.desc}</div>
-              <div className="mt-4 flex items-center gap-1 text-xs text-primary-glow font-medium">
-                Start <ArrowRight className="w-3 h-3" />
-              </div>
-            </motion.button>
+              <Link to="/interview/new" className="clay p-6 text-left group block">
+                <div className="w-11 h-11 rounded-2xl clay-sm grid place-items-center mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                  <c.icon className="w-5 h-5 text-primary-glow" />
+                </div>
+                <div className="font-semibold">{c.title}</div>
+                <div className="text-sm text-muted-foreground mt-1">{c.desc}</div>
+                <div className="mt-4 flex items-center gap-1 text-xs text-primary-glow font-medium">
+                  Start <ArrowRight className="w-3 h-3" />
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
       </section>
