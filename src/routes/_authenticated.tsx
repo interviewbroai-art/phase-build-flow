@@ -17,6 +17,7 @@ function AuthenticatedLayout() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     enabled: !!user,
     queryKey: ["profile", user?.id],
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -47,7 +48,7 @@ function AuthenticatedLayout() {
   // Onboarding gate: send to /onboarding if not completed and not already there
   const needsOnboarding =
     !profileLoading &&
-    profile &&
+    profile?.onboarding_completed === false &&
     !profile.onboarding_completed &&
     location.pathname !== "/onboarding";
 
