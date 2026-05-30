@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
@@ -48,7 +48,8 @@ function OnboardingPage() {
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+      if (error) throw error;
       return data;
     },
   });
@@ -73,24 +74,34 @@ function OnboardingPage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
+    const payload = {
+      id: userId,
+      display_name: profile?.display_name ?? user?.email?.split("@")[0] ?? "Student",
+      avatar_url: profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null,
+      default_job_role: jobRole.trim(),
+      default_experience_level: experience,
+      default_interview_mode: mode,
+      onboarding_completed: true,
+    };
+
+    const { data: updatedProfile, error } = await supabase
       .from("profiles")
-      .update({
-        default_job_role: jobRole.trim(),
-        default_experience_level: experience,
-        default_interview_mode: mode,
-        onboarding_completed: true,
-      })
-      .eq("id", userId);
+      .upsert(payload, { onConflict: "id" })
+      .select("*")
+      .single();
     setSaving(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    qc.invalidateQueries({ queryKey: ["profile", userId] });
+    qc.setQueryData(["profile", userId], updatedProfile);
     toast.success("All set — let's get cracking.");
     navigate({ to: "/dashboard" });
   };
+
+  if (profile?.onboarding_completed) {
+    return <Navigate to="/dashboard" />;
+  }
 
   return (
     <div className="px-6 py-10 max-w-2xl mx-auto">
