@@ -184,20 +184,11 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={runDemoSession}
-            disabled={running}
-            className="btn-ghost-clay"
-            title="Simulate a completed session"
-          >
-            <Wand2 className="w-4 h-4" />
-            {running ? "Running…" : "Run demo session"}
-          </button>
           <Link to="/interview/new" className="btn-clay">
             <Play className="w-4 h-4" /> Start new interview
           </Link>
         </div>
+
       </motion.div>
 
       {/* Stats */}
