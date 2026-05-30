@@ -1,11 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { User as UserIcon, ImageIcon, Save, Sparkles, Upload, Trash2, ArrowLeft } from "lucide-react";
+import {
+  User as UserIcon,
+  ImageIcon,
+  Save,
+  Sparkles,
+  Upload,
+  Trash2,
+  ArrowLeft,
+  FileText,
+  Wand2,
+  Flame,
+  Layers,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { summarizeResume } from "@/lib/api/interview.functions";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — InterviewBro AI" }] }),
