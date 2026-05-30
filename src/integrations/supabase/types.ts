@@ -79,6 +79,9 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_streak: number
+          default_experience_level: string | null
+          default_interview_mode: string
+          default_job_role: string | null
           display_name: string | null
           id: string
           last_active_date: string | null
@@ -93,6 +96,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number
+          default_experience_level?: string | null
+          default_interview_mode?: string
+          default_job_role?: string | null
           display_name?: string | null
           id: string
           last_active_date?: string | null
@@ -107,6 +113,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number
+          default_experience_level?: string | null
+          default_interview_mode?: string
+          default_job_role?: string | null
           display_name?: string | null
           id?: string
           last_active_date?: string | null
@@ -124,7 +133,66 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_xp_and_streak: {
+        Args: { p_user: string; p_xp: number }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          current_streak: number
+          default_experience_level: string | null
+          default_interview_mode: string
+          default_job_role: string | null
+          display_name: string | null
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          onboarding_completed: boolean
+          preferred_language: string
+          updated_at: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_interview_session: {
+        Args: {
+          p_communication: number
+          p_confidence: number
+          p_duration: number
+          p_feedback?: Json
+          p_overall: number
+          p_session: string
+          p_technical: number
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          current_streak: number
+          default_experience_level: string | null
+          default_interview_mode: string
+          default_job_role: string | null
+          display_name: string | null
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          onboarding_completed: boolean
+          preferred_language: string
+          updated_at: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
