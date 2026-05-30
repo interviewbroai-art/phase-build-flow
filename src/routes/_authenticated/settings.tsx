@@ -52,6 +52,19 @@ const EXPERIENCE = [
 const inputCls =
   "w-full clay-inset px-4 py-3 text-sm bg-transparent outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60";
 
+const DIFFICULTIES = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+  { value: "brutal", label: "Brutal" },
+] as const;
+
+const DEPTHS = [
+  { value: "shallow", label: "Shallow" },
+  { value: "moderate", label: "Moderate" },
+  { value: "deep", label: "Deep" },
+] as const;
+
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
 
 function SettingsPage() {
@@ -59,6 +72,8 @@ function SettingsPage() {
   const userId = user!.id;
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const summarizeFn = useServerFn(summarizeResume);
+
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", userId],
