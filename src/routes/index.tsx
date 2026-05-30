@@ -118,10 +118,10 @@ function Nav() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <a href="#" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">
+          <a href="/login" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">
             Sign in
           </a>
-          <MagneticButton href="#" className="btn-clay text-sm py-2.5 px-5">
+          <MagneticButton href="/signup" className="btn-clay text-sm py-2.5 px-5">
             Get started
           </MagneticButton>
         </div>
@@ -216,7 +216,7 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.25 }}
             className="mt-8 flex flex-wrap gap-3"
           >
-            <MagneticButton href="#" className="btn-clay">
+            <MagneticButton href="/signup" className="btn-clay">
               Start free interview <ArrowRight className="w-4 h-4" />
             </MagneticButton>
             <a href="#how" className="btn-ghost-clay">
@@ -1092,7 +1092,7 @@ function CTA() {
           No credit card. No spam. Just you, the AI, and your first scored round.
         </p>
         <div className="relative mt-8 flex justify-center gap-3 flex-wrap">
-          <MagneticButton href="#" className="btn-clay">
+          <MagneticButton href="/signup" className="btn-clay">
             Start free interview <ArrowRight className="w-4 h-4" />
           </MagneticButton>
           <a href="#pricing" className="btn-ghost-clay">See pricing</a>
