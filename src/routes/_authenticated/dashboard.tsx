@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import {
   Flame,
@@ -15,7 +14,6 @@ import {
   Briefcase,
   GraduationCap,
   ChevronRight,
-  Wand2,
   Check,
   X as XIcon,
   CalendarDays,
@@ -33,8 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const userId = user!.id;
-  const qc = useQueryClient();
-  const [running, setRunning] = useState(false);
+
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
