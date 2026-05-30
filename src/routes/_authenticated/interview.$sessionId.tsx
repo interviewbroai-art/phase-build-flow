@@ -177,6 +177,7 @@ function InterviewRoomPage() {
       });
       askedRef.current += 1;
       setTranscript((prev) => [...prev, { role: "assistant", content: res.question }]);
+      speak(res.question);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "AI failed to respond");
     } finally {
