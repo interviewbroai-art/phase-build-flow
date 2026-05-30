@@ -148,7 +148,7 @@ function InterviewRoomPage() {
   const progress = Math.min(100, (askedRef.current / TOTAL_QUESTIONS) * 100);
 
   return (
-    <div className="px-4 md:px-6 py-6 max-w-3xl mx-auto flex flex-col min-h-screen">
+    <div className="px-4 md:px-6 py-6 max-w-3xl mx-auto flex flex-col h-[100dvh] min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <Link
