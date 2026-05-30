@@ -11,11 +11,16 @@ import {
   Globe2,
   ArrowRight,
   Check,
+  X,
   Briefcase,
   Zap,
   MessageSquare,
   GraduationCap,
   Volume2,
+  Star,
+  Crown,
+  Rocket,
+  Quote,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -49,6 +54,8 @@ function Landing() {
       <Features />
       <Modes />
       <HowItWorks />
+      <StatsBand />
+      <Testimonials />
       <Pricing />
       <CTA />
       <Footer />
