@@ -53,9 +53,82 @@ function InterviewRoomPage() {
   const [thinking, setThinking] = useState(false);
   const [ending, setEnding] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [listening, setListening] = useState(false);
+  const [ttsOn, setTtsOn] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState({ stt: false, tts: false });
   const startedAtRef = useRef<number>(Date.now());
   const askedRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const interimRef = useRef<string>("");
+
+  // Detect voice support
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported({
+      stt: !!SR,
+      tts: typeof window.speechSynthesis !== "undefined",
+    });
+  }, []);
+
+  const speak = (text: string) => {
+    if (!ttsOn || typeof window === "undefined" || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      u.pitch = 1;
+      u.lang = session?.language === "hi" ? "hi-IN" : "en-IN";
+      window.speechSynthesis.speak(u);
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleListening = () => {
+    if (!voiceSupported.stt) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = session?.language === "hi" ? "hi-IN" : "en-IN";
+    interimRef.current = input;
+    rec.onresult = (e: any) => {
+      let finalText = "";
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      if (finalText) {
+        interimRef.current = (interimRef.current ? interimRef.current.trimEnd() + " " : "") + finalText.trim();
+      }
+      setInput((interimRef.current + (interim ? " " + interim : "")).trimStart());
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
+  // Stop speech / mic on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop();
+        window.speechSynthesis?.cancel();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
 
   // Timer
   useEffect(() => {
