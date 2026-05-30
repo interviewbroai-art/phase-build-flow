@@ -197,6 +197,28 @@ function SettingsPage() {
     toast.success("Avatar removed");
   };
 
+  const handleSummarize = async () => {
+    const text = resumeText.trim();
+    if (text.length < 20) {
+      toast.error("Paste at least a few sentences of your resume");
+      return;
+    }
+    setSummarizing(true);
+    const toastId = toast.loading("Reading your resume…");
+    try {
+      const res = await summarizeFn({ data: { resumeText: text } });
+      setResumeSummary(res.summary);
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+      qc.invalidateQueries({ queryKey: ["profile", "resume-summary"] });
+      toast.success("Resume summary ready", { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to summarize", { id: toastId });
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
+
   const initials = (displayName || user?.email || "U")
     .split(" ")
     .map((s) => s[0])
