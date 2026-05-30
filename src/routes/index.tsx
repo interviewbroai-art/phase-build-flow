@@ -118,10 +118,10 @@ function Nav() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <a href="#" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">
+          <a href="/login" className="hidden sm:inline text-sm text-muted-foreground hover:text-foreground">
             Sign in
           </a>
-          <MagneticButton href="#" className="btn-clay text-sm py-2.5 px-5">
+          <MagneticButton href="/signup" className="btn-clay text-sm py-2.5 px-5">
             Get started
           </MagneticButton>
         </div>
