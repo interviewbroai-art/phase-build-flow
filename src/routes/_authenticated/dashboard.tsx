@@ -87,60 +87,6 @@ function Dashboard() {
   const xpInLevel = xp % 500;
   const xpPct = Math.min(100, (xpInLevel / 500) * 100);
 
-  const runDemoSession = async () => {
-    setRunning(true);
-    try {
-      const jobRole = profile?.default_job_role || "Software Engineer";
-      const experience = profile?.default_experience_level || "fresher";
-      const mode = profile?.default_interview_mode || "friendly";
-
-      const overall = 60 + Math.floor(Math.random() * 35);
-      const confidence = 55 + Math.floor(Math.random() * 40);
-      const communication = 55 + Math.floor(Math.random() * 40);
-      const technical = 50 + Math.floor(Math.random() * 45);
-      const duration = 240 + Math.floor(Math.random() * 600);
-
-      const { data: created, error: createErr } = await supabase
-        .from("interview_sessions")
-        .insert({
-          user_id: userId,
-          job_role: jobRole,
-          experience_level: experience,
-          mode,
-          interview_type: "mixed",
-          language: profile?.preferred_language ?? "en",
-          status: "in_progress",
-        })
-        .select("id")
-        .single();
-      if (createErr) throw createErr;
-
-      const { error: rpcErr } = await supabase.rpc("complete_interview_session", {
-        p_session: created.id,
-        p_overall: overall,
-        p_confidence: confidence,
-        p_communication: communication,
-        p_technical: technical,
-        p_duration: duration,
-        p_feedback: {
-          strengths: ["Clear structure", "Good examples"],
-          improvements: ["Slow down on technical answers", "Quantify impact"],
-          summary: "Solid round — keep practicing system-design style questions.",
-        },
-      });
-      if (rpcErr) throw rpcErr;
-
-      toast.success(`+${50 + overall} XP earned!`);
-      qc.invalidateQueries({ queryKey: ["profile", userId] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "recent"] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "weekly"] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "all"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setRunning(false);
-    }
-  };
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
