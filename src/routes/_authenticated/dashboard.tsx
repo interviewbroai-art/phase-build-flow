@@ -194,12 +194,9 @@ function Dashboard() {
             <Wand2 className="w-4 h-4" />
             {running ? "Running…" : "Run demo session"}
           </button>
-          <button
-            className="btn-clay"
-            onClick={() => toast("Mock interview flow lands in Phase 3 — use Run demo for now.")}
-          >
+          <Link to="/interview/new" className="btn-clay">
             <Play className="w-4 h-4" /> Start new interview
-          </button>
+          </Link>
         </div>
       </motion.div>
 
