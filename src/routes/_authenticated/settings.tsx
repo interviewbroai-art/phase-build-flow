@@ -390,7 +390,51 @@ function SettingsPage() {
                 ))}
               </select>
             </Field>
+            <Field label={<span className="inline-flex items-center gap-1"><Flame className="w-3 h-3" /> Default difficulty</span>}>
+              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={inputCls} disabled={isLoading}>
+                {DIFFICULTIES.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-background">{o.label}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label={<span className="inline-flex items-center gap-1"><Layers className="w-3 h-3" /> Default depth</span>}>
+              <select value={depth} onChange={(e) => setDepth(e.target.value)} className={inputCls} disabled={isLoading}>
+                {DEPTHS.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-background">{o.label}</option>
+                ))}
+              </select>
+            </Field>
           </div>
+        </section>
+
+        {/* Resume */}
+        <section className="clay p-6">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary-glow" /> Your resume
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Paste your resume — the AI will reference your real projects, skills and experience.
+              </p>
+            </div>
+            <button type="button" className="btn-ghost-clay text-xs" onClick={handleSummarize} disabled={summarizing}>
+              <Wand2 className="w-3.5 h-3.5" /> {summarizing ? "Reading…" : "Summarize with AI"}
+            </button>
+          </div>
+          <textarea
+            value={resumeText}
+            onChange={(e) => setResumeText(e.target.value)}
+            placeholder="Paste your resume here — education, projects, internships, skills, achievements…"
+            className={inputCls + " mt-4 min-h-[200px] resize-y"}
+            maxLength={20000}
+          />
+          {resumeSummary && (
+            <div className="mt-4 clay-inset rounded-2xl p-4">
+              <div className="text-[10px] uppercase tracking-widest text-primary-glow mb-2">AI summary (used by interviewer)</div>
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap">{resumeSummary}</p>
+            </div>
+          )}
         </section>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -407,7 +451,7 @@ function SettingsPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -417,3 +461,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
