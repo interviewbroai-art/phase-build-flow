@@ -1,7 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { motion } from "motion/react";
-import { ArrowLeft, Trophy, Clock, Mic, Brain, MessageSquare } from "lucide-react";
+import {
+  ArrowLeft,
+  Trophy,
+  Clock,
+  Mic,
+  Brain,
+  MessageSquare,
+  Pencil,
+  Save,
+  X,
+  StickyNote,
+  Sparkles,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/sessions/$sessionId")({
@@ -9,8 +23,12 @@ export const Route = createFileRoute("/_authenticated/sessions/$sessionId")({
   component: SessionDetailPage,
 });
 
+const textareaCls =
+  "w-full clay-inset px-4 py-3 text-sm bg-transparent outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60 resize-y min-h-[120px]";
+
 function SessionDetailPage() {
   const { sessionId } = Route.useParams();
+  const qc = useQueryClient();
 
   const { data: s, isLoading, error } = useQuery({
     queryKey: ["session", sessionId],
@@ -24,6 +42,59 @@ function SessionDetailPage() {
       return data;
     },
   });
+
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  const [editingSummary, setEditingSummary] = useState(false);
+  const [summaryDraft, setSummaryDraft] = useState("");
+  const [savingSummary, setSavingSummary] = useState(false);
+
+  useEffect(() => {
+    if (!s) return;
+    setNotesDraft(s.notes ?? "");
+    const fb = (s.feedback ?? {}) as { summary?: string };
+    setSummaryDraft(fb.summary ?? "");
+  }, [s]);
+
+  const saveNotes = async () => {
+    setSavingNotes(true);
+    const { error } = await supabase
+      .from("interview_sessions")
+      .update({ notes: notesDraft.trim() || null })
+      .eq("id", sessionId);
+    setSavingNotes(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Notes saved");
+    setEditingNotes(false);
+    qc.invalidateQueries({ queryKey: ["session", sessionId] });
+  };
+
+  const saveSummary = async () => {
+    setSavingSummary(true);
+    const current = (s?.feedback ?? {}) as Record<string, unknown>;
+    const next = { ...current, summary: summaryDraft.trim() };
+    const { error } = await supabase
+      .from("interview_sessions")
+      .update({ feedback: next })
+      .eq("id", sessionId);
+    setSavingSummary(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Feedback summary saved");
+    setEditingSummary(false);
+    qc.invalidateQueries({ queryKey: ["session", sessionId] });
+  };
+
+  const feedback = (s?.feedback ?? null) as
+    | { summary?: string; strengths?: string[]; improvements?: string[] }
+    | null;
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-4xl mx-auto">
@@ -116,15 +187,139 @@ function SessionDetailPage() {
             </div>
           </section>
 
+          {/* AI Feedback summary (editable) */}
           <section className="mt-6 clay p-6">
-            <h2 className="font-semibold">AI feedback</h2>
-            {s.feedback ? (
-              <pre className="mt-4 clay-inset rounded-xl p-4 text-xs whitespace-pre-wrap break-words text-muted-foreground overflow-x-auto">
-                {JSON.stringify(s.feedback, null, 2)}
-              </pre>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary-glow" /> AI feedback summary
+              </h2>
+              {!editingSummary ? (
+                <button
+                  type="button"
+                  className="btn-ghost-clay text-xs"
+                  onClick={() => setEditingSummary(true)}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-ghost-clay text-xs"
+                    onClick={() => {
+                      setEditingSummary(false);
+                      setSummaryDraft(feedback?.summary ?? "");
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-clay text-xs"
+                    onClick={saveSummary}
+                    disabled={savingSummary}
+                  >
+                    <Save className="w-3.5 h-3.5" /> {savingSummary ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {editingSummary ? (
+              <textarea
+                value={summaryDraft}
+                onChange={(e) => setSummaryDraft(e.target.value)}
+                placeholder="Add or refine the AI feedback summary…"
+                className={"mt-4 " + textareaCls}
+                maxLength={2000}
+              />
+            ) : feedback?.summary ? (
+              <p className="mt-4 text-sm text-muted-foreground whitespace-pre-wrap">
+                {feedback.summary}
+              </p>
             ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No detailed feedback recorded for this session yet.
+              <p className="mt-4 text-sm text-muted-foreground italic">
+                No summary yet — click Edit to add one.
+              </p>
+            )}
+
+            {(feedback?.strengths?.length || feedback?.improvements?.length) ? (
+              <div className="mt-5 grid sm:grid-cols-2 gap-4">
+                {feedback?.strengths && feedback.strengths.length > 0 && (
+                  <div className="clay-inset rounded-xl p-4">
+                    <div className="text-[10px] uppercase tracking-widest text-primary-glow">Strengths</div>
+                    <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                      {feedback.strengths.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {feedback?.improvements && feedback.improvements.length > 0 && (
+                  <div className="clay-inset rounded-xl p-4">
+                    <div className="text-[10px] uppercase tracking-widest text-accent">To improve</div>
+                    <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                      {feedback.improvements.map((it, i) => (
+                        <li key={i}>{it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
+
+          {/* Personal notes (editable) */}
+          <section className="mt-6 clay p-6">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <StickyNote className="w-4 h-4 text-primary-glow" /> My notes
+              </h2>
+              {!editingNotes ? (
+                <button
+                  type="button"
+                  className="btn-ghost-clay text-xs"
+                  onClick={() => setEditingNotes(true)}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> {s.notes ? "Edit" : "Add note"}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-ghost-clay text-xs"
+                    onClick={() => {
+                      setEditingNotes(false);
+                      setNotesDraft(s.notes ?? "");
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-clay text-xs"
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                  >
+                    <Save className="w-3.5 h-3.5" /> {savingNotes ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {editingNotes ? (
+              <textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                placeholder="What did you learn? What will you do differently?"
+                className={"mt-4 " + textareaCls}
+                maxLength={4000}
+              />
+            ) : s.notes ? (
+              <p className="mt-4 text-sm text-muted-foreground whitespace-pre-wrap">{s.notes}</p>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground italic">
+                Capture takeaways for next time — only you can see this.
               </p>
             )}
           </section>
