@@ -141,10 +141,12 @@ function InterviewRoomPage() {
           sessionId,
           jobRole: session!.job_role,
           experience: session!.experience_level,
+          difficulty: (session!.difficulty ?? "medium") as "easy" | "medium" | "hard" | "brutal",
           durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
           transcript: tr,
         },
       });
+
       toast.success("Interview complete! XP awarded.", { id: toastId });
       navigate({ to: "/sessions/$sessionId", params: { sessionId }, replace: true });
     } catch (e) {
