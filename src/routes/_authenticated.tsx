@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Navigate, Link, useRouter } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
-import { Sparkles, LayoutDashboard, MessageSquare, FileText, BarChart3, Settings, LogOut } from "lucide-react";
+import { Sparkles, LayoutDashboard, History, Settings, LogOut } from "lucide-react";
 import { motion } from "motion/react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -51,11 +51,9 @@ function AuthenticatedLayout() {
 function Sidebar({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const items = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/dashboard", label: "Mock interview", icon: MessageSquare, soon: true },
-    { to: "/dashboard", label: "Resume", icon: FileText, soon: true },
-    { to: "/dashboard", label: "Analytics", icon: BarChart3, soon: true },
-    { to: "/dashboard", label: "Settings", icon: Settings, soon: true },
-  ];
+    { to: "/history", label: "Interview history", icon: History },
+    { to: "/settings", label: "Settings", icon: Settings },
+  ] as const;
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 p-5 flex-col gap-4 z-20">
       <Link to="/" className="flex items-center gap-2 px-2 py-2">
@@ -68,20 +66,15 @@ function Sidebar({ onSignOut }: { onSignOut: () => Promise<void> }) {
       </Link>
 
       <nav className="clay p-3 flex-1 flex flex-col gap-1">
-        {items.map((it, i) => (
+        {items.map((it) => (
           <Link
-            key={i}
+            key={it.to}
             to={it.to}
             activeOptions={{ exact: true }}
             className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] transition data-[status=active]:bg-foreground/[0.06] data-[status=active]:text-foreground"
           >
             <it.icon className="w-4 h-4" />
             <span className="flex-1">{it.label}</span>
-            {it.soon && (
-              <span className="text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-full clay-inset text-muted-foreground">
-                Soon
-              </span>
-            )}
           </Link>
         ))}
       </nav>

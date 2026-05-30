@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Mail, ArrowRight } from "lucide-react";
+import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthShell, Field, inputCls } from "@/components/auth/AuthShell";
 
@@ -16,15 +16,18 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + "/reset-password",
     });
     setLoading(false);
     if (error) {
+      setError(error.message);
       toast.error(error.message);
       return;
     }
@@ -46,9 +49,28 @@ function ForgotPasswordPage() {
       }
     >
       {sent ? (
-        <div className="clay-inset p-5 text-sm text-muted-foreground">
-          If an account exists for <span className="text-foreground font-medium">{email}</span>, a
-          reset link is on its way.
+        <div className="space-y-4">
+          <div className="clay-inset p-5 text-sm flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary-glow shrink-0" />
+            <div>
+              <div className="font-medium text-foreground">Reset link sent</div>
+              <p className="text-muted-foreground mt-1">
+                If an account exists for{" "}
+                <span className="text-foreground font-medium">{email}</span>, a reset link is on
+                its way. Check your spam folder too.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSent(false);
+              setEmail("");
+            }}
+            className="btn-ghost-clay w-full justify-center"
+          >
+            Send to a different email
+          </button>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
@@ -65,6 +87,9 @@ function ForgotPasswordPage() {
               />
             </div>
           </Field>
+          {error && (
+            <div className="text-xs text-destructive">{error}</div>
+          )}
           <button type="submit" disabled={loading} className="btn-clay w-full justify-center">
             {loading ? "Sending…" : <>Send reset link <ArrowRight className="w-4 h-4" /></>}
           </button>
