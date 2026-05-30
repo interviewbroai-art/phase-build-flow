@@ -256,7 +256,7 @@ function InterviewRoomPage() {
       </div>
 
       {/* Composer */}
-      <div className="clay p-2 sticky bottom-4">
+      <div className="clay p-2 shrink-0">
         <div className="flex items-end gap-2">
           <textarea
             value={input}
