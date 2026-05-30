@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { User as UserIcon, ImageIcon, Save, Sparkles } from "lucide-react";
+import { User as UserIcon, ImageIcon, Save, Sparkles, Upload, Trash2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -37,10 +37,13 @@ const EXPERIENCE = [
 const inputCls =
   "w-full clay-inset px-4 py-3 text-sm bg-transparent outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60";
 
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
+
 function SettingsPage() {
   const { user } = useAuth();
   const userId = user!.id;
   const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", userId],
@@ -62,6 +65,7 @@ function SettingsPage() {
   const [experience, setExperience] = useState("fresher");
   const [mode, setMode] = useState("friendly");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -96,6 +100,60 @@ function SettingsPage() {
     qc.invalidateQueries({ queryKey: ["profile", userId] });
   };
 
+  const onAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast.error("Image must be under 3 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = pub.publicUrl;
+
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", userId);
+      if (dbErr) throw dbErr;
+
+      setAvatarUrl(publicUrl);
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+      toast.success("Avatar updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    setUploading(true);
+    const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", userId);
+    setUploading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setAvatarUrl("");
+    qc.invalidateQueries({ queryKey: ["profile", userId] });
+    toast.success("Avatar removed");
+  };
+
   const initials = (displayName || user?.email || "U")
     .split(" ")
     .map((s) => s[0])
@@ -106,7 +164,19 @@ function SettingsPage() {
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-3xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" /> Back to dashboard
+      </Link>
+
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mt-3"
+      >
         <p className="text-sm text-muted-foreground">Settings</p>
         <h1 className="mt-1 text-3xl md:text-4xl font-bold">Your profile</h1>
         <p className="mt-2 text-muted-foreground text-sm">
@@ -120,21 +190,51 @@ function SettingsPage() {
           <h2 className="font-semibold flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-primary-glow" /> Identity
           </h2>
-          <div className="mt-5 flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl clay-sm grid place-items-center overflow-hidden">
+          <div className="mt-5 flex flex-col sm:flex-row items-start gap-5">
+            <div className="w-24 h-24 rounded-2xl clay-sm grid place-items-center overflow-hidden shrink-0">
               {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarUrl}
                   alt="Avatar preview"
                   className="w-full h-full object-cover"
-                  onError={(e) => ((e.currentTarget.style.display = "none"))}
                 />
               ) : (
-                <span className="font-display font-bold text-xl text-gradient">{initials}</span>
+                <span className="font-display font-bold text-2xl text-gradient">{initials}</span>
               )}
             </div>
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 w-full space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onAvatarChange}
+                />
+                <button
+                  type="button"
+                  className="btn-ghost-clay"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4" />
+                  {uploading ? "Uploading…" : avatarUrl ? "Replace photo" : "Upload photo"}
+                </button>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    className="btn-ghost-clay text-muted-foreground hover:text-destructive"
+                    onClick={removeAvatar}
+                    disabled={uploading}
+                  >
+                    <Trash2 className="w-4 h-4" /> Remove
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                PNG or JPG, square works best. Max 3 MB.
+              </p>
+
               <Field label="Display name">
                 <input
                   type="text"
@@ -143,16 +243,17 @@ function SettingsPage() {
                   placeholder="Priya Sharma"
                   className={inputCls}
                   disabled={isLoading}
+                  maxLength={80}
                 />
               </Field>
-              <Field label="Avatar URL">
+              <Field label="Avatar URL (optional)">
                 <div className="relative">
                   <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="url"
                     value={avatarUrl}
                     onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://…"
+                    placeholder="https://… or use upload"
                     className={inputCls + " pl-10"}
                     disabled={isLoading}
                   />
@@ -167,6 +268,9 @@ function SettingsPage() {
           <h2 className="font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary-glow" /> Interview preferences
           </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            New sessions auto-fill these defaults — you can still override per session.
+          </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-4">
             <Field label="Default job role">
               <input
@@ -176,6 +280,7 @@ function SettingsPage() {
                 placeholder="Frontend developer"
                 className={inputCls}
                 disabled={isLoading}
+                maxLength={120}
               />
             </Field>
             <Field label="Experience level">
@@ -223,7 +328,7 @@ function SettingsPage() {
           </div>
         </section>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-xs text-muted-foreground">
             Signed in as <span className="text-foreground">{user?.email}</span>
           </p>

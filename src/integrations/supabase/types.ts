@@ -29,6 +29,7 @@ export type Database = {
           job_role: string
           language: string
           mode: string
+          notes: string | null
           overall_score: number | null
           status: string
           technical_score: number | null
@@ -48,6 +49,7 @@ export type Database = {
           job_role: string
           language?: string
           mode?: string
+          notes?: string | null
           overall_score?: number | null
           status?: string
           technical_score?: number | null
@@ -67,6 +69,7 @@ export type Database = {
           job_role?: string
           language?: string
           mode?: string
+          notes?: string | null
           overall_score?: number | null
           status?: string
           technical_score?: number | null
