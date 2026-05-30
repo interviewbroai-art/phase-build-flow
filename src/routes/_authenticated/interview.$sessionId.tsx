@@ -252,6 +252,25 @@ function InterviewRoomPage() {
           <ArrowLeft className="w-4 h-4" /> Exit
         </Link>
         <div className="flex items-center gap-2 text-xs">
+          {voiceSupported.tts && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !ttsOn;
+                setTtsOn(next);
+                if (!next) window.speechSynthesis?.cancel();
+              }}
+              className={
+                "clay-inset px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition " +
+                (ttsOn ? "ring-1 ring-primary/40 text-primary-glow" : "text-muted-foreground hover:text-foreground")
+              }
+              aria-pressed={ttsOn}
+              title={ttsOn ? "Mute interviewer voice" : "Hear interviewer voice"}
+            >
+              {ttsOn ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+              Voice
+            </button>
+          )}
           <span className="clay-inset px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
             <Clock className="w-3 h-3 text-accent" />
             {mm}:{ss}
