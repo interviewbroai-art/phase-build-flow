@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import {
   Flame,
@@ -15,7 +14,6 @@ import {
   Briefcase,
   GraduationCap,
   ChevronRight,
-  Wand2,
   Check,
   X as XIcon,
   CalendarDays,
@@ -33,8 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { user } = useAuth();
   const userId = user!.id;
-  const qc = useQueryClient();
-  const [running, setRunning] = useState(false);
+
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
@@ -87,60 +84,6 @@ function Dashboard() {
   const xpInLevel = xp % 500;
   const xpPct = Math.min(100, (xpInLevel / 500) * 100);
 
-  const runDemoSession = async () => {
-    setRunning(true);
-    try {
-      const jobRole = profile?.default_job_role || "Software Engineer";
-      const experience = profile?.default_experience_level || "fresher";
-      const mode = profile?.default_interview_mode || "friendly";
-
-      const overall = 60 + Math.floor(Math.random() * 35);
-      const confidence = 55 + Math.floor(Math.random() * 40);
-      const communication = 55 + Math.floor(Math.random() * 40);
-      const technical = 50 + Math.floor(Math.random() * 45);
-      const duration = 240 + Math.floor(Math.random() * 600);
-
-      const { data: created, error: createErr } = await supabase
-        .from("interview_sessions")
-        .insert({
-          user_id: userId,
-          job_role: jobRole,
-          experience_level: experience,
-          mode,
-          interview_type: "mixed",
-          language: profile?.preferred_language ?? "en",
-          status: "in_progress",
-        })
-        .select("id")
-        .single();
-      if (createErr) throw createErr;
-
-      const { error: rpcErr } = await supabase.rpc("complete_interview_session", {
-        p_session: created.id,
-        p_overall: overall,
-        p_confidence: confidence,
-        p_communication: communication,
-        p_technical: technical,
-        p_duration: duration,
-        p_feedback: {
-          strengths: ["Clear structure", "Good examples"],
-          improvements: ["Slow down on technical answers", "Quantify impact"],
-          summary: "Solid round — keep practicing system-design style questions.",
-        },
-      });
-      if (rpcErr) throw rpcErr;
-
-      toast.success(`+${50 + overall} XP earned!`);
-      qc.invalidateQueries({ queryKey: ["profile", userId] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "recent"] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "weekly"] });
-      qc.invalidateQueries({ queryKey: ["sessions", userId, "all"] });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setRunning(false);
-    }
-  };
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
@@ -184,20 +127,11 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={runDemoSession}
-            disabled={running}
-            className="btn-ghost-clay"
-            title="Simulate a completed session"
-          >
-            <Wand2 className="w-4 h-4" />
-            {running ? "Running…" : "Run demo session"}
-          </button>
           <Link to="/interview/new" className="btn-clay">
             <Play className="w-4 h-4" /> Start new interview
           </Link>
         </div>
+
       </motion.div>
 
       {/* Stats */}
@@ -266,7 +200,7 @@ function Dashboard() {
             </div>
             <h3 className="mt-4 font-semibold">No interviews yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Hit "Run demo session" to see XP, streak and history update.
+              Start your first interview to begin earning XP and building a streak.
             </p>
           </div>
         ) : (
