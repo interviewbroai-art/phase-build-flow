@@ -95,6 +95,9 @@ function InterviewRoomPage() {
           experience: session.experience_level,
           mode: session.mode,
           language: session.language,
+          difficulty: (session.difficulty ?? "medium") as "easy" | "medium" | "hard" | "brutal",
+          depth: (session.depth ?? "moderate") as "shallow" | "moderate" | "deep",
+          resumeSummary: profile?.resume_summary ?? null,
           history,
           questionNumber: askedRef.current + 1,
         },
@@ -107,6 +110,7 @@ function InterviewRoomPage() {
       setThinking(false);
     }
   };
+
 
   const sendAnswer = async () => {
     const text = input.trim();
