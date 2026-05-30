@@ -1,5 +1,7 @@
-import { createFileRoute, Outlet, Navigate, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Navigate, Link, useRouter, useLocation } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, LayoutDashboard, History, Settings, LogOut } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -10,6 +12,21 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const location = useLocation();
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    enabled: !!user,
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   if (loading) {
     return (
@@ -27,6 +44,17 @@ function AuthenticatedLayout() {
     return <Navigate to="/login" search={{ redirect: router.state.location.href }} />;
   }
 
+  // Onboarding gate: send to /onboarding if not completed and not already there
+  const needsOnboarding =
+    !profileLoading &&
+    profile &&
+    !profile.onboarding_completed &&
+    location.pathname !== "/onboarding";
+
+  if (needsOnboarding) {
+    return <Navigate to="/onboarding" />;
+  }
+
   return (
     <div className="min-h-screen bg-hero relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -39,7 +67,7 @@ function AuthenticatedLayout() {
       </div>
 
       <div className="relative z-10 flex min-h-screen">
-        <Sidebar onSignOut={signOut} />
+        <Sidebar onSignOut={signOut} profile={profile} email={user.email ?? ""} />
         <main className="flex-1 lg:pl-72">
           <Outlet />
         </main>
@@ -48,12 +76,29 @@ function AuthenticatedLayout() {
   );
 }
 
-function Sidebar({ onSignOut }: { onSignOut: () => Promise<void> }) {
+function Sidebar({
+  onSignOut,
+  profile,
+  email,
+}: {
+  onSignOut: () => Promise<void>;
+  profile: { display_name?: string | null; avatar_url?: string | null; level?: number | null } | null | undefined;
+  email: string;
+}) {
   const items = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/history", label: "Interview history", icon: History },
     { to: "/settings", label: "Settings", icon: Settings },
   ] as const;
+  const name = profile?.display_name || email.split("@")[0] || "You";
+  const initials = name
+    .split(" ")
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 p-5 flex-col gap-4 z-20">
       <Link to="/" className="flex items-center gap-2 px-2 py-2">
@@ -77,6 +122,27 @@ function Sidebar({ onSignOut }: { onSignOut: () => Promise<void> }) {
             <span className="flex-1">{it.label}</span>
           </Link>
         ))}
+
+        <div className="mt-auto pt-3">
+          <Link
+            to="/settings"
+            className="clay-inset p-3 rounded-2xl flex items-center gap-3 hover:bg-foreground/[0.02] transition"
+          >
+            <div className="w-10 h-10 rounded-xl clay-sm grid place-items-center overflow-hidden shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-display font-bold text-sm text-gradient">{initials}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{name}</div>
+              <div className="text-[10px] text-muted-foreground truncate">
+                Lvl {profile?.level ?? 1} · {email}
+              </div>
+            </div>
+          </Link>
+        </div>
       </nav>
 
       <button
