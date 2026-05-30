@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import {
@@ -16,6 +16,9 @@ import {
   GraduationCap,
   ChevronRight,
   Wand2,
+  Check,
+  X as XIcon,
+  CalendarDays,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -53,7 +56,22 @@ function Dashboard() {
         .from("interview_sessions")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Last 30 days for streak/weekly widget
+  const { data: weekly } = useQuery({
+    queryKey: ["sessions", userId, "weekly"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const { data, error } = await supabase
+        .from("interview_sessions")
+        .select("id,status,completed_at,created_at")
+        .gte("created_at", since.toISOString());
       if (error) throw error;
       return data ?? [];
     },
@@ -65,7 +83,7 @@ function Dashboard() {
   const xp = profile?.xp ?? 0;
   const level = profile?.level ?? 1;
   const streak = profile?.current_streak ?? 0;
-  const xpForNext = level * 500;
+  const longest = profile?.longest_streak ?? 0;
   const xpInLevel = xp % 500;
   const xpPct = Math.min(100, (xpInLevel / 500) * 100);
 
@@ -115,10 +133,10 @@ function Dashboard() {
       toast.success(`+${50 + overall} XP earned!`);
       qc.invalidateQueries({ queryKey: ["profile", userId] });
       qc.invalidateQueries({ queryKey: ["sessions", userId, "recent"] });
+      qc.invalidateQueries({ queryKey: ["sessions", userId, "weekly"] });
       qc.invalidateQueries({ queryKey: ["sessions", userId, "all"] });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Something went wrong";
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setRunning(false);
     }
@@ -136,6 +154,15 @@ function Dashboard() {
             InterviewBro<span className="text-gradient"> AI</span>
           </span>
         </Link>
+        <Link to="/settings" className="w-9 h-9 rounded-2xl clay-sm grid place-items-center overflow-hidden">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs font-display font-bold text-gradient">
+              {firstName.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Greeting */}
@@ -151,7 +178,9 @@ function Dashboard() {
             Hi {firstName} <span className="text-gradient">👋</span>
           </h1>
           <p className="mt-2 text-muted-foreground text-sm max-w-md">
-            Ready for today's round? Keep the streak alive.
+            {profile?.default_job_role
+              ? `Defaults: ${profile.default_job_role} · ${profile.default_interview_mode}`
+              : "Set up your defaults in Settings."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start md:self-auto">
@@ -160,7 +189,7 @@ function Dashboard() {
             onClick={runDemoSession}
             disabled={running}
             className="btn-ghost-clay"
-            title="Simulate a completed session to test XP, streak and history"
+            title="Simulate a completed session"
           >
             <Wand2 className="w-4 h-4" />
             {running ? "Running…" : "Run demo session"}
@@ -176,7 +205,7 @@ function Dashboard() {
 
       {/* Stats */}
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Flame} label="Current streak" value={`${streak} days`} accent />
+        <StatCard icon={Flame} label="Current streak" value={`${streak} days`} sub={`Best: ${longest}`} accent />
         <StatCard
           icon={Zap}
           label="Level"
@@ -184,9 +213,12 @@ function Dashboard() {
           sub={`${xpInLevel} / 500 XP to Lvl ${level + 1}`}
           pct={xpPct}
         />
-        <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} sub={`Next: ${xpForNext}`} />
-        <StatCard icon={Target} label="Sessions" value={String(sessions?.length ?? 0)} />
+        <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} />
+        <StatCard icon={Target} label="Sessions (30d)" value={String(weekly?.length ?? 0)} />
       </div>
+
+      {/* Streak analytics widget */}
+      <StreakWidget sessions={weekly ?? []} currentStreak={streak} longest={longest} />
 
       {/* Quick start */}
       <section className="mt-10">
@@ -238,13 +270,13 @@ function Dashboard() {
             </div>
             <h3 className="mt-4 font-semibold">No interviews yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Hit “Run demo session” to see how scores, XP and streak update.
+              Hit "Run demo session" to see XP, streak and history update.
             </p>
           </div>
         ) : (
           <div className="clay p-2">
             <div className="clay-inset rounded-xl divide-y divide-border/30">
-              {sessions.map((s) => (
+              {sessions.slice(0, 5).map((s) => (
                 <Link
                   key={s.id}
                   to="/sessions/$sessionId"
@@ -278,6 +310,196 @@ function Dashboard() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+/* ------------------ Streak analytics widget ------------------ */
+
+type WeeklySession = {
+  id: string;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+};
+
+function StreakWidget({
+  sessions,
+  currentStreak,
+  longest,
+}: {
+  sessions: WeeklySession[];
+  currentStreak: number;
+  longest: number;
+}) {
+  const days = useMemo(() => {
+    const out: {
+      date: Date;
+      key: string;
+      label: string;
+      weekday: string;
+      isToday: boolean;
+      isFuture: boolean;
+      count: number;
+      completed: number;
+    }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Build last 7 days (oldest -> today)
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      out.push({
+        date: d,
+        key,
+        label: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        weekday: d.toLocaleDateString("en-IN", { weekday: "short" }),
+        isToday: i === 0,
+        isFuture: false,
+        count: 0,
+        completed: 0,
+      });
+    }
+
+    for (const s of sessions) {
+      const d = new Date(s.created_at);
+      const key = d.toISOString().slice(0, 10);
+      const slot = out.find((x) => x.key === key);
+      if (slot) {
+        slot.count++;
+        if (s.status === "completed") slot.completed++;
+      }
+    }
+    return out;
+  }, [sessions]);
+
+  const completedDays = days.filter((d) => d.completed > 0).length;
+  const missedDays = days.filter((d) => d.completed === 0 && !d.isToday).length;
+  const totalSessions = days.reduce((acc, d) => acc + d.count, 0);
+
+  // Explanation for missed days
+  const missedExplanation = useMemo(() => {
+    const missed = days.filter((d) => d.completed === 0 && !d.isToday).map((d) => d.weekday);
+    if (missed.length === 0) return "Perfect week — every day had a completed round.";
+    if (missed.length === 7) return "You haven't practised in the last week. Streaks reset after one missed day.";
+    return `Missed practice on ${missed.join(", ")}. Each gap day breaks your streak — finish at least one session daily to keep the flame alive.`;
+  }, [days]);
+
+  return (
+    <section className="mt-8 clay p-6">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="font-semibold flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-primary-glow" /> Last 7 days
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Daily completion · streak rules apply.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="clay-inset px-3 py-1.5 rounded-full">
+            <span className="text-muted-foreground">Done</span>{" "}
+            <span className="font-medium text-foreground">{completedDays}/7</span>
+          </span>
+          <span className="clay-inset px-3 py-1.5 rounded-full">
+            <span className="text-muted-foreground">Streak</span>{" "}
+            <span className="font-medium text-foreground">{currentStreak}d</span>
+          </span>
+          <span className="clay-inset px-3 py-1.5 rounded-full">
+            <span className="text-muted-foreground">Best</span>{" "}
+            <span className="font-medium text-foreground">{longest}d</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-7 gap-2">
+        {days.map((d, i) => {
+          const done = d.completed > 0;
+          const isMissed = !done && !d.isToday;
+          return (
+            <motion.div
+              key={d.key}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.04 }}
+              className="text-center"
+              title={
+                done
+                  ? `${d.completed} completed session${d.completed > 1 ? "s" : ""} · ${d.label}`
+                  : d.isToday
+                  ? `Today · ${d.count} session${d.count === 1 ? "" : "s"} so far`
+                  : `Missed · ${d.label}`
+              }
+            >
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {d.weekday}
+              </div>
+              <div
+                className={
+                  "mt-1.5 mx-auto w-10 h-10 sm:w-12 sm:h-12 rounded-2xl grid place-items-center transition " +
+                  (done
+                    ? "clay-sm ring-1 ring-primary/40"
+                    : d.isToday
+                    ? "clay-inset ring-1 ring-accent/40"
+                    : "clay-inset opacity-60")
+                }
+                style={
+                  done ? { background: "var(--gradient-primary)" } : undefined
+                }
+              >
+                {done ? (
+                  <Check className="w-4 h-4 text-primary-foreground" />
+                ) : d.isToday ? (
+                  <Flame className="w-4 h-4 text-accent" />
+                ) : (
+                  <XIcon className="w-4 h-4 text-muted-foreground" />
+                )}
+              </div>
+              <div
+                className={
+                  "mt-1 text-[10px] " +
+                  (isMissed ? "text-muted-foreground/70" : "text-muted-foreground")
+                }
+              >
+                {d.date.getDate()}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 grid sm:grid-cols-3 gap-3 text-sm">
+        <MiniStat label="Days completed" value={`${completedDays}/7`} tone="ok" />
+        <MiniStat label="Missed days" value={String(missedDays)} tone={missedDays > 0 ? "warn" : "ok"} />
+        <MiniStat label="Total sessions" value={String(totalSessions)} />
+      </div>
+
+      <div className="mt-4 clay-inset rounded-xl p-4 text-xs text-muted-foreground leading-relaxed">
+        <span className="text-foreground font-medium">Streak rules:</span> finish at least one
+        session per day. Same-day extras don't add to the streak. Skip a day and the counter
+        resets to 1 on your next session. {missedExplanation}
+      </div>
+    </section>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "ok" | "warn";
+}) {
+  const color =
+    tone === "warn" ? "text-accent" : tone === "ok" ? "text-primary-glow" : "text-foreground";
+  return (
+    <div className="clay-inset rounded-xl p-3">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={"mt-1 font-display font-bold text-lg " + color}>{value}</div>
     </div>
   );
 }
