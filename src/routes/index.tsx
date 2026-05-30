@@ -691,82 +691,380 @@ function HowItWorks() {
 }
 
 /* ---------- Pricing ---------- */
+type Billing = "monthly" | "yearly";
+type PlanKey = "free" | "pro" | "campus";
+
+const PLANS: {
+  key: PlanKey;
+  name: string;
+  tagline: string;
+  icon: typeof Star;
+  monthly: number;
+  yearly: number;
+  unit: string;
+  badge?: string;
+}[] = [
+  { key: "free", name: "Free", tagline: "Try the coach", icon: Star, monthly: 0, yearly: 0, unit: "forever" },
+  { key: "pro", name: "Pro", tagline: "Most loved by students", icon: Crown, monthly: 199, yearly: 1599, unit: "mo", badge: "Most popular" },
+  { key: "campus", name: "Campus", tagline: "Full placement season", icon: Rocket, monthly: 499, yearly: 3999, unit: "sem" },
+];
+
+const FEATURE_MATRIX: { label: string; values: Record<PlanKey, boolean | string> }[] = [
+  { label: "Mock interviews", values: { free: "3 / week", pro: "Unlimited", campus: "Unlimited" } },
+  { label: "Voice AI interviewer", values: { free: false, pro: true, campus: true } },
+  { label: "Adaptive difficulty", values: { free: true, pro: true, campus: true } },
+  { label: "Resume analyzer & ATS score", values: { free: "Basic", pro: "Advanced", campus: "Advanced+" } },
+  { label: "Detailed feedback report", values: { free: "Basic", pro: "Full", campus: "Full" } },
+  { label: "Company-specific prep", values: { free: false, pro: true, campus: true } },
+  { label: "Languages", values: { free: "English", pro: "EN · HI · TE", campus: "EN · HI · TE" } },
+  { label: "Video interview simulation", values: { free: false, pro: false, campus: true } },
+  { label: "Priority AI coach", values: { free: false, pro: false, campus: true } },
+];
+
 function Pricing() {
-  const tiers = [
-    {
-      name: "Free",
-      price: "₹0",
-      sub: "Forever free",
-      features: ["3 mock interviews / week", "Basic feedback", "Resume score", "English only"],
-      cta: "Start free",
-      highlighted: false,
-    },
-    {
-      name: "Pro",
-      price: "₹199",
-      sub: "per month",
-      features: [
-        "Unlimited interviews",
-        "Voice AI interviewer",
-        "Advanced feedback",
-        "Company-specific prep",
-        "All languages",
-      ],
-      cta: "Go Pro",
-      highlighted: true,
-    },
-    {
-      name: "Campus",
-      price: "₹499",
-      sub: "per semester",
-      features: ["Everything in Pro", "Video simulation", "Resume optimization", "Priority AI coach"],
-      cta: "Get Campus",
-      highlighted: false,
-    },
-  ];
+  const [billing, setBilling] = useState<Billing>("monthly");
+  const [selected, setSelected] = useState<PlanKey>("pro");
+
+  const priceFor = (p: (typeof PLANS)[number]) => (billing === "monthly" ? p.monthly : p.yearly);
+  const unitFor = (p: (typeof PLANS)[number]) =>
+    p.monthly === 0 ? p.unit : billing === "monthly" ? `/${p.unit}` : "/yr";
+
   return (
-    <section id="pricing" className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+    <section id="pricing" className="mx-auto max-w-7xl px-6 py-24 md:py-32 relative">
       <SectionHeader
         eyebrow="Pricing"
-        title={<>Student-friendly. <span className="text-gradient">No catches.</span></>}
-        sub="Cancel anytime. Switch plans anytime."
+        title={<>Pick a plan. <span className="text-gradient">Watch it light up.</span></>}
+        sub="Click any card to compare features live. Cancel anytime."
       />
-      <div className="mt-14 grid md:grid-cols-3 gap-6">
-        {tiers.map((t, i) => (
+
+      {/* Billing toggle */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="mt-10 flex justify-center"
+      >
+        <div className="clay-inset p-1.5 rounded-full inline-flex relative">
+          {(["monthly", "yearly"] as Billing[]).map((b) => (
+            <button
+              key={b}
+              onClick={() => setBilling(b)}
+              className={`relative z-10 px-5 py-2 text-sm font-medium rounded-full transition-colors ${
+                billing === b ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {billing === b && (
+                <motion.span
+                  layoutId="billing-pill"
+                  className="absolute inset-0 rounded-full -z-10"
+                  style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-clay-sm)" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              {b === "monthly" ? "Monthly" : "Yearly"}
+              {b === "yearly" && (
+                <span className="ml-2 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-success/20 text-success">
+                  -33%
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Plan cards */}
+      <div className="mt-10 grid md:grid-cols-3 gap-6">
+        {PLANS.map((p, i) => {
+          const isSelected = selected === p.key;
+          return (
+            <motion.button
+              key={p.key}
+              type="button"
+              onClick={() => setSelected(p.key)}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: i * 0.08 }}
+              whileHover={{ y: -6 }}
+              className={`clay p-8 flex flex-col text-left relative overflow-hidden transition-all ${
+                isSelected ? "glow-primary" : "opacity-90 hover:opacity-100"
+              }`}
+              aria-pressed={isSelected}
+            >
+              {/* Selected gradient backdrop */}
+              <motion.div
+                initial={false}
+                animate={{ opacity: isSelected ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at top, oklch(0.62 0.22 277 / 0.25), transparent 70%)",
+                }}
+              />
+
+              <div className="relative flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <span className="w-11 h-11 rounded-2xl clay-sm grid place-items-center">
+                    <p.icon className="w-5 h-5 text-primary-glow" />
+                  </span>
+                  <div>
+                    <div className="font-semibold text-lg">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.tagline}</div>
+                  </div>
+                </div>
+                {p.badge && (
+                  <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary text-primary-foreground">
+                    {p.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Animated price */}
+              <div className="relative mt-2 flex items-baseline gap-1.5">
+                <span className="text-sm text-muted-foreground">₹</span>
+                <motion.span
+                  key={`${p.key}-${billing}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-5xl font-display font-bold"
+                >
+                  {priceFor(p).toLocaleString("en-IN")}
+                </motion.span>
+                <span className="text-sm text-muted-foreground">{unitFor(p)}</span>
+              </div>
+              {billing === "yearly" && p.monthly > 0 && (
+                <div className="text-xs text-success mt-1">
+                  Save ₹{(p.monthly * 12 - p.yearly).toLocaleString("en-IN")} / year
+                </div>
+              )}
+
+              {/* Top 4 highlights from matrix */}
+              <ul className="relative mt-6 space-y-2.5 text-sm flex-1">
+                {FEATURE_MATRIX.slice(0, 5).map((f) => {
+                  const v = f.values[p.key];
+                  const enabled = v !== false;
+                  return (
+                    <li key={f.label} className="flex items-start gap-2.5">
+                      <span
+                        className={`mt-0.5 w-5 h-5 rounded-full grid place-items-center shrink-0 ${
+                          enabled ? "clay-sm" : "clay-inset"
+                        }`}
+                      >
+                        {enabled ? (
+                          <Check className="w-3 h-3 text-success" />
+                        ) : (
+                          <X className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </span>
+                      <span className={enabled ? "text-foreground/90" : "text-muted-foreground/60 line-through"}>
+                        {f.label}
+                        {typeof v === "string" && <span className="text-muted-foreground"> · {v}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <span
+                className={`relative mt-8 ${isSelected ? "btn-clay" : "btn-ghost-clay"}`}
+              >
+                {isSelected ? <>Get {p.name} <ArrowRight className="w-4 h-4" /></> : "Select plan"}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Live comparison matrix */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6 }}
+        className="mt-14 clay p-2 md:p-3 overflow-hidden"
+      >
+        <div className="clay-inset rounded-xl overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead>
+              <tr className="border-b border-border/40">
+                <th className="text-left font-medium text-muted-foreground p-4">Feature</th>
+                {PLANS.map((p) => {
+                  const isSel = selected === p.key;
+                  return (
+                    <th key={p.key} className="p-4 text-center">
+                      <button
+                        onClick={() => setSelected(p.key)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                          isSel ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        style={
+                          isSel
+                            ? { background: "var(--gradient-primary)", boxShadow: "var(--shadow-clay-sm)" }
+                            : undefined
+                        }
+                      >
+                        {p.name}
+                      </button>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {FEATURE_MATRIX.map((row, idx) => (
+                <tr
+                  key={row.label}
+                  className={`border-b border-border/20 last:border-0 ${
+                    idx % 2 === 0 ? "bg-foreground/[0.015]" : ""
+                  }`}
+                >
+                  <td className="p-4 text-foreground/90">{row.label}</td>
+                  {PLANS.map((p) => {
+                    const v = row.values[p.key];
+                    const isSel = selected === p.key;
+                    return (
+                      <td
+                        key={p.key}
+                        className={`p-4 text-center transition-colors ${
+                          isSel ? "bg-primary/8 text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {v === true && <Check className="w-4 h-4 text-success inline" />}
+                        {v === false && <X className="w-4 h-4 text-muted-foreground/40 inline" />}
+                        {typeof v === "string" && (
+                          <span className={isSel ? "font-medium" : ""}>{v}</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+/* ---------- Stats band ---------- */
+function StatsBand() {
+  const items = [
+    { value: 50000, suffix: "+", label: "Students trained" },
+    { value: 1200000, suffix: "+", label: "Questions answered" },
+    { value: 87, suffix: "%", label: "Crack their first interview" },
+    { value: 4.9, suffix: "★", label: "Avg. app rating", decimals: 1 },
+  ];
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-16">
+      <div className="clay p-8 md:p-10 grid grid-cols-2 md:grid-cols-4 gap-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        {items.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: i * 0.08 }}
+            className="text-center"
+          >
+            <div className="text-4xl md:text-5xl font-display font-bold text-gradient">
+              <CountUp end={s.value} decimals={s.decimals ?? 0} />
+              {s.suffix}
+            </div>
+            <div className="mt-1 text-xs md:text-sm text-muted-foreground">{s.label}</div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CountUp({ end, decimals = 0 }: { end: number; decimals?: number }) {
+  const [val, setVal] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    let started = false;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !started) {
+          started = true;
+          const dur = 1600;
+          const t0 = performance.now();
+          const step = (t: number) => {
+            const p = Math.min(1, (t - t0) / dur);
+            const eased = 1 - Math.pow(1 - p, 3);
+            setVal(end * eased);
+            if (p < 1) raf = requestAnimationFrame(step);
+          };
+          raf = requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => {
+      cancelAnimationFrame(raf);
+      obs.disconnect();
+    };
+  }, [end]);
+  const formatted =
+    decimals > 0
+      ? val.toFixed(decimals)
+      : Math.floor(val).toLocaleString("en-IN");
+  return <span ref={ref}>{formatted}</span>;
+}
+
+/* ---------- Testimonials ---------- */
+function Testimonials() {
+  const items = [
+    { name: "Priya S.", role: "B.Tech · NIT Trichy", quote: "Got placed at TCS Digital after 2 weeks of practice. The follow-up questions felt scarily real.", score: 94 },
+    { name: "Arjun M.", role: "MCA · VIT", quote: "The Hindi voice mode helped me think clearly. My confidence score went from 62 to 91.", score: 91 },
+    { name: "Sneha R.", role: "Fresher · Hyderabad", quote: "Resume analyzer found 11 ATS issues I missed. Cleared Infosys screening on the first try.", score: 88 },
+    { name: "Karthik V.", role: "B.Tech · Anna University", quote: "Fast pressure mode is brutal in the best way. Amazon's bar-raiser felt easy after this.", score: 96 },
+    { name: "Aisha K.", role: "Pre-final year · IIIT", quote: "I love the streak system. 40-day streak, 3 offers, 0 anxiety.", score: 90 },
+  ];
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+      <SectionHeader
+        eyebrow="Loved by students"
+        title={<>From <span className="text-gradient">campus</span> to <span className="text-gradient">offer letter.</span></>}
+        sub="Real stories from students who cracked their dream interview."
+      />
+      <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {items.map((t, i) => (
           <motion.div
             key={t.name}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: i * 0.1 }}
-            className={`clay p-8 flex flex-col relative ${t.highlighted ? "glow-primary scale-[1.02]" : ""}`}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: i * 0.08 }}
+            whileHover={{ y: -6 }}
+            className={`clay p-6 flex flex-col ${i === 1 || i === 3 ? "lg:translate-y-6" : ""}`}
           >
-            {t.highlighted && (
-              <span className="self-start text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary text-primary-foreground mb-4">
-                Most popular
-              </span>
-            )}
-            <h3 className="text-xl font-semibold">{t.name}</h3>
-            <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="text-4xl font-display font-bold">{t.price}</span>
-              <span className="text-sm text-muted-foreground">{t.sub}</span>
+            <Quote className="w-6 h-6 text-primary-glow opacity-60" />
+            <p className="mt-3 text-sm leading-relaxed">{t.quote}</p>
+            <div className="mt-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full grid place-items-center font-semibold text-sm text-primary-foreground"
+                  style={{ background: "var(--gradient-primary)" }}
+                >
+                  {t.name[0]}
+                </div>
+                <div>
+                  <div className="text-sm font-medium">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">{t.role}</div>
+                </div>
+              </div>
+              <div className="clay-inset px-2.5 py-1 rounded-full text-xs flex items-center gap-1">
+                <Trophy className="w-3 h-3 text-accent" /> {t.score}
+              </div>
             </div>
-            <ul className="mt-6 space-y-3 text-sm flex-1">
-              {t.features.map((f) => (
-                <li key={f} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 w-5 h-5 rounded-full clay-sm grid place-items-center shrink-0">
-                    <Check className="w-3 h-3 text-success" />
-                  </span>
-                  <span className="text-muted-foreground">{f}</span>
-                </li>
-              ))}
-            </ul>
-            <MagneticButton
-              href="#"
-              className={`mt-8 ${t.highlighted ? "btn-clay" : "btn-ghost-clay"}`}
-            >
-              {t.cta}
-            </MagneticButton>
           </motion.div>
         ))}
       </div>
