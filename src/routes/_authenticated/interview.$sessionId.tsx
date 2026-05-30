@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Send, Square, Clock, Sparkles, Bot, User as UserIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Square, Clock, Sparkles, Bot, User as UserIcon, Loader2, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { interviewChat, scoreInterview } from "@/lib/api/interview.functions";
 
@@ -53,9 +53,82 @@ function InterviewRoomPage() {
   const [thinking, setThinking] = useState(false);
   const [ending, setEnding] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [listening, setListening] = useState(false);
+  const [ttsOn, setTtsOn] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState({ stt: false, tts: false });
   const startedAtRef = useRef<number>(Date.now());
   const askedRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const interimRef = useRef<string>("");
+
+  // Detect voice support
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported({
+      stt: !!SR,
+      tts: typeof window.speechSynthesis !== "undefined",
+    });
+  }, []);
+
+  const speak = (text: string) => {
+    if (!ttsOn || typeof window === "undefined" || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      u.pitch = 1;
+      u.lang = session?.language === "hi" ? "hi-IN" : "en-IN";
+      window.speechSynthesis.speak(u);
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleListening = () => {
+    if (!voiceSupported.stt) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = session?.language === "hi" ? "hi-IN" : "en-IN";
+    interimRef.current = input;
+    rec.onresult = (e: any) => {
+      let finalText = "";
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      if (finalText) {
+        interimRef.current = (interimRef.current ? interimRef.current.trimEnd() + " " : "") + finalText.trim();
+      }
+      setInput((interimRef.current + (interim ? " " + interim : "")).trimStart());
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
+  // Stop speech / mic on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop();
+        window.speechSynthesis?.cancel();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -104,6 +177,7 @@ function InterviewRoomPage() {
       });
       askedRef.current += 1;
       setTranscript((prev) => [...prev, { role: "assistant", content: res.question }]);
+      speak(res.question);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "AI failed to respond");
     } finally {
@@ -178,6 +252,25 @@ function InterviewRoomPage() {
           <ArrowLeft className="w-4 h-4" /> Exit
         </Link>
         <div className="flex items-center gap-2 text-xs">
+          {voiceSupported.tts && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !ttsOn;
+                setTtsOn(next);
+                if (!next) window.speechSynthesis?.cancel();
+              }}
+              className={
+                "clay-inset px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition " +
+                (ttsOn ? "ring-1 ring-primary/40 text-primary-glow" : "text-muted-foreground hover:text-foreground")
+              }
+              aria-pressed={ttsOn}
+              title={ttsOn ? "Mute interviewer voice" : "Hear interviewer voice"}
+            >
+              {ttsOn ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+              Voice
+            </button>
+          )}
           <span className="clay-inset px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
             <Clock className="w-3 h-3 text-accent" />
             {mm}:{ss}
@@ -278,7 +371,10 @@ function InterviewRoomPage() {
         <div className="flex items-end gap-2">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              interimRef.current = e.target.value;
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -286,12 +382,30 @@ function InterviewRoomPage() {
               }
             }}
             placeholder={
-              thinking ? "Interviewer is thinking…" : ending ? "Scoring…" : "Type your answer… (Shift+Enter for newline)"
+              thinking
+                ? "Interviewer is thinking…"
+                : ending
+                ? "Scoring…"
+                : listening
+                ? "Listening… speak your answer"
+                : "Type your answer… (Shift+Enter for newline)"
             }
             disabled={thinking || ending}
             rows={2}
             className="flex-1 clay-inset px-4 py-3 text-sm bg-transparent outline-none resize-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground/60 disabled:opacity-60"
           />
+          {voiceSupported.stt && (
+            <button
+              type="button"
+              onClick={toggleListening}
+              disabled={thinking || ending}
+              className={"btn-ghost-clay h-12 px-4 shrink-0 " + (listening ? "ring-1 ring-accent/60 text-accent" : "")}
+              aria-label={listening ? "Stop listening" : "Speak your answer"}
+              title={listening ? "Stop listening" : "Speak your answer"}
+            >
+              {listening ? <MicOff className="w-4 h-4 animate-pulse" /> : <Mic className="w-4 h-4" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={sendAnswer}
@@ -302,6 +416,12 @@ function InterviewRoomPage() {
             <Send className="w-4 h-4" />
           </button>
         </div>
+        {listening && (
+          <div className="px-3 pt-2 pb-1 text-[10px] text-muted-foreground inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Listening — tap the mic again to stop.
+          </div>
+        )}
       </div>
     </div>
   );
