@@ -53,10 +53,12 @@ function InterviewRoomPage() {
     return () => clearInterval(t);
   }, []);
 
-  // Auto-scroll
+  // Auto-scroll — only inside the transcript container, never the page
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = bottomRef.current?.parentElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [transcript, thinking]);
+
 
   // Kick off the first question once session is loaded
   const initRef = useRef(false);
@@ -254,7 +256,7 @@ function InterviewRoomPage() {
       </div>
 
       {/* Composer */}
-      <div className="clay p-2 sticky bottom-4">
+      <div className="clay p-2 shrink-0">
         <div className="flex items-end gap-2">
           <textarea
             value={input}
