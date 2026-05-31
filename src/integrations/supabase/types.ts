@@ -83,6 +83,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount_paise: number
+          created_at: string
+          currency: string
+          id: string
+          method: string | null
+          notes: Json | null
+          paid_at: string | null
+          plan: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          receipt_number: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paise: number
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string | null
+          notes?: Json | null
+          paid_at?: string | null
+          plan: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          receipt_number: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paise?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string | null
+          notes?: Json | null
+          paid_at?: string | null
+          plan?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          receipt_number?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -99,6 +153,9 @@ export type Database = {
           level: number
           longest_streak: number
           onboarding_completed: boolean
+          plan: string
+          plan_expires_at: string | null
+          plan_started_at: string | null
           preferred_language: string
           resume_summary: string | null
           resume_text: string | null
@@ -120,6 +177,9 @@ export type Database = {
           level?: number
           longest_streak?: number
           onboarding_completed?: boolean
+          plan?: string
+          plan_expires_at?: string | null
+          plan_started_at?: string | null
           preferred_language?: string
           resume_summary?: string | null
           resume_text?: string | null
@@ -141,6 +201,9 @@ export type Database = {
           level?: number
           longest_streak?: number
           onboarding_completed?: boolean
+          plan?: string
+          plan_expires_at?: string | null
+          plan_started_at?: string | null
           preferred_language?: string
           resume_summary?: string | null
           resume_text?: string | null
@@ -171,6 +234,9 @@ export type Database = {
           level: number
           longest_streak: number
           onboarding_completed: boolean
+          plan: string
+          plan_expires_at: string | null
+          plan_started_at: string | null
           preferred_language: string
           resume_summary: string | null
           resume_text: string | null
@@ -209,6 +275,9 @@ export type Database = {
           level: number
           longest_streak: number
           onboarding_completed: boolean
+          plan: string
+          plan_expires_at: string | null
+          plan_started_at: string | null
           preferred_language: string
           resume_summary: string | null
           resume_text: string | null
