@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
@@ -15,9 +16,12 @@ import {
   Layers,
   FileText,
   Check,
+  Crown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { checkInterviewQuota } from "@/lib/api/billing.functions";
+import { PLANS } from "@/lib/billing/plans";
 
 export const Route = createFileRoute("/_authenticated/interview/new")({
   head: () => ({ meta: [{ title: "New interview — InterviewBro AI" }] }),
@@ -69,6 +73,13 @@ function NewInterviewPage() {
   const userId = user!.id;
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
+  const quotaFn = useServerFn(checkInterviewQuota);
+
+  const { data: quota } = useQuery({
+    queryKey: ["interview-quota", userId],
+    queryFn: () => quotaFn(),
+    staleTime: 30_000,
+  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
@@ -105,6 +116,11 @@ function NewInterviewPage() {
   const start = async () => {
     if (!jobRole.trim()) {
       toast.error("Pick a job role to continue");
+      return;
+    }
+    if (quota && !quota.allowed) {
+      toast.error("You've used all interviews on your free plan this month.");
+      navigate({ to: "/upgrade" });
       return;
     }
     setStarting(true);
@@ -158,6 +174,39 @@ function NewInterviewPage() {
           </div>
         </div>
       </motion.div>
+
+      {quota && (
+        <div
+          className={
+            "mt-6 clay-sm rounded-2xl p-4 flex flex-wrap items-center gap-3 text-sm " +
+            (quota.allowed ? "" : "ring-1 ring-rose-500/40")
+          }
+        >
+          <Crown className="w-4 h-4 text-primary-glow shrink-0" />
+          <div className="flex-1 min-w-0">
+            {quota.limit === -1 ? (
+              <>
+                You're on <span className="font-medium text-foreground">{PLANS[quota.planId].name}</span> — unlimited interviews ⚡
+              </>
+            ) : quota.allowed ? (
+              <>
+                <span className="font-medium text-foreground">{PLANS[quota.planId].name}</span> plan ·
+                <span className="text-muted-foreground"> {quota.used}/{quota.limit} interviews used this month</span>
+              </>
+            ) : (
+              <span className="text-rose-300">
+                You've used all {quota.limit} interviews on the {PLANS[quota.planId].name} plan this month.
+              </span>
+            )}
+          </div>
+          {quota.planId === "free" && (
+            <Link to="/upgrade" className="btn-clay px-3 py-1.5 rounded-xl text-xs font-medium">
+              Upgrade
+            </Link>
+          )}
+        </div>
+      )}
+
 
       <div className="mt-8 clay p-6 space-y-6">
         {/* Resume hint */}
