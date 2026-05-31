@@ -128,7 +128,19 @@ function Sidebar({
           </Link>
         ))}
 
-        <div className="mt-auto pt-3">
+        <div className="mt-auto pt-3 space-y-2">
+          {currentPlan === "free" && (
+            <Link
+              to="/upgrade"
+              className="clay-sm p-3 rounded-2xl flex items-center gap-2 text-xs text-foreground hover:bg-foreground/[0.04] transition group"
+            >
+              <Crown className="w-4 h-4 text-primary-glow group-hover:scale-110 transition" />
+              <span className="flex-1">
+                <span className="font-medium">Upgrade to Pro</span>
+                <span className="block text-[10px] text-muted-foreground">Unlock 50+ interviews</span>
+              </span>
+            </Link>
+          )}
           <Link
             to="/settings"
             className="clay-inset p-3 rounded-2xl flex items-center gap-3 hover:bg-foreground/[0.02] transition"
@@ -143,7 +155,7 @@ function Sidebar({
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">{name}</div>
               <div className="text-[10px] text-muted-foreground truncate">
-                Lvl {profile?.level ?? 1} · {email}
+                {planLabel} · Lvl {profile?.level ?? 1}
               </div>
             </div>
           </Link>
