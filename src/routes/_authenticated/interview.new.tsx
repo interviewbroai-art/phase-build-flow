@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
@@ -15,9 +16,12 @@ import {
   Layers,
   FileText,
   Check,
+  Crown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { checkInterviewQuota } from "@/lib/api/billing.functions";
+import { PLANS } from "@/lib/billing/plans";
 
 export const Route = createFileRoute("/_authenticated/interview/new")({
   head: () => ({ meta: [{ title: "New interview — InterviewBro AI" }] }),
@@ -69,6 +73,13 @@ function NewInterviewPage() {
   const userId = user!.id;
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
+  const quotaFn = useServerFn(checkInterviewQuota);
+
+  const { data: quota } = useQuery({
+    queryKey: ["interview-quota", userId],
+    queryFn: () => quotaFn(),
+    staleTime: 30_000,
+  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
@@ -105,6 +116,11 @@ function NewInterviewPage() {
   const start = async () => {
     if (!jobRole.trim()) {
       toast.error("Pick a job role to continue");
+      return;
+    }
+    if (quota && !quota.allowed) {
+      toast.error("You've used all interviews on your free plan this month.");
+      navigate({ to: "/upgrade" });
       return;
     }
     setStarting(true);
