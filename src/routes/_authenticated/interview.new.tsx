@@ -175,6 +175,39 @@ function NewInterviewPage() {
         </div>
       </motion.div>
 
+      {quota && (
+        <div
+          className={
+            "mt-6 clay-sm rounded-2xl p-4 flex flex-wrap items-center gap-3 text-sm " +
+            (quota.allowed ? "" : "ring-1 ring-rose-500/40")
+          }
+        >
+          <Crown className="w-4 h-4 text-primary-glow shrink-0" />
+          <div className="flex-1 min-w-0">
+            {quota.limit === -1 ? (
+              <>
+                You're on <span className="font-medium text-foreground">{PLANS[quota.planId].name}</span> — unlimited interviews ⚡
+              </>
+            ) : quota.allowed ? (
+              <>
+                <span className="font-medium text-foreground">{PLANS[quota.planId].name}</span> plan ·
+                <span className="text-muted-foreground"> {quota.used}/{quota.limit} interviews used this month</span>
+              </>
+            ) : (
+              <span className="text-rose-300">
+                You've used all {quota.limit} interviews on the {PLANS[quota.planId].name} plan this month.
+              </span>
+            )}
+          </div>
+          {quota.planId === "free" && (
+            <Link to="/upgrade" className="btn-clay px-3 py-1.5 rounded-xl text-xs font-medium">
+              Upgrade
+            </Link>
+          )}
+        </div>
+      )}
+
+
       <div className="mt-8 clay p-6 space-y-6">
         {/* Resume hint */}
         <Link
