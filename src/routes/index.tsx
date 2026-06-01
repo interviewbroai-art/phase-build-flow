@@ -1127,25 +1127,69 @@ function SectionHeader({
   );
 }
 
+/* ---------- Founders ---------- */
+function Founders() {
+  const team = [
+    { name: "Joseph Akhil", role: "Founder", initials: "JA" },
+    { name: "Abhishek Roy", role: "Co-Founder", initials: "AR" },
+  ];
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-20 pt-4">
+      <SectionHeader
+        eyebrow="The team"
+        title={<>Built by people who've <span className="text-gradient">been there.</span></>}
+        sub="Two builders obsessed with helping Indian students crack their dream interviews."
+      />
+      <div className="mt-12 grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
+        {team.map((m) => (
+          <motion.div
+            key={m.name}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.5 }}
+            className="clay p-6 flex items-center gap-4"
+          >
+            <div
+              className="grid place-items-center w-14 h-14 rounded-2xl font-display font-bold text-lg text-primary-foreground shrink-0"
+              style={{ background: "var(--gradient-primary)" }}
+            >
+              {m.initials}
+            </div>
+            <div>
+              <div className="font-semibold">{m.name}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{m.role}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Footer ---------- */
 function Footer() {
   return (
-    <footer className="border-t border-border/40 mt-10 relative z-10">
-      <div className="mx-auto max-w-7xl px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="grid place-items-center w-8 h-8 rounded-xl clay-sm">
-            <Sparkles className="w-3.5 h-3.5 text-primary-glow" />
-          </span>
-          <span className="text-sm text-muted-foreground">
-            © 2026 InterviewBro AI · Made in India for students
-          </span>
+    <>
+      <Founders />
+      <footer className="border-t border-border/40 mt-2 relative z-10">
+        <div className="mx-auto max-w-7xl px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="grid place-items-center w-8 h-8 rounded-xl clay-sm">
+              <Sparkles className="w-3.5 h-3.5 text-primary-glow" />
+            </span>
+            <span className="text-sm text-muted-foreground">
+              © 2026 InterviewBro AI · Made in India for students
+            </span>
+          </div>
+          <div className="flex gap-6 text-sm text-muted-foreground">
+            <a href="/privacy" className="hover:text-foreground">Privacy</a>
+            <a href="/terms" className="hover:text-foreground">Terms</a>
+            <a href="/cookies" className="hover:text-foreground">Cookies</a>
+            <a href="mailto:josephsandhya25@email.com" className="hover:text-foreground">Contact</a>
+          </div>
         </div>
-        <div className="flex gap-6 text-sm text-muted-foreground">
-          <a href="#" className="hover:text-foreground">Privacy</a>
-          <a href="#" className="hover:text-foreground">Terms</a>
-          <a href="#" className="hover:text-foreground">Contact</a>
-        </div>
-      </div>
-    </footer>
+      </footer>
+    </>
   );
 }

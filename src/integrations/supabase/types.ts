@@ -157,8 +157,10 @@ export type Database = {
           plan_expires_at: string | null
           plan_started_at: string | null
           preferred_language: string
+          resume_file_name: string | null
           resume_summary: string | null
           resume_text: string | null
+          resume_url: string | null
           updated_at: string
           xp: number
         }
@@ -181,8 +183,10 @@ export type Database = {
           plan_expires_at?: string | null
           plan_started_at?: string | null
           preferred_language?: string
+          resume_file_name?: string | null
           resume_summary?: string | null
           resume_text?: string | null
+          resume_url?: string | null
           updated_at?: string
           xp?: number
         }
@@ -205,8 +209,10 @@ export type Database = {
           plan_expires_at?: string | null
           plan_started_at?: string | null
           preferred_language?: string
+          resume_file_name?: string | null
           resume_summary?: string | null
           resume_text?: string | null
+          resume_url?: string | null
           updated_at?: string
           xp?: number
         }
@@ -238,8 +244,10 @@ export type Database = {
           plan_expires_at: string | null
           plan_started_at: string | null
           preferred_language: string
+          resume_file_name: string | null
           resume_summary: string | null
           resume_text: string | null
+          resume_url: string | null
           updated_at: string
           xp: number
         }
@@ -279,8 +287,10 @@ export type Database = {
           plan_expires_at: string | null
           plan_started_at: string | null
           preferred_language: string
+          resume_file_name: string | null
           resume_summary: string | null
           resume_text: string | null
+          resume_url: string | null
           updated_at: string
           xp: number
         }

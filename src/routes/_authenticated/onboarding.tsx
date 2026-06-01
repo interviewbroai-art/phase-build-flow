@@ -1,9 +1,9 @@
 import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { ArrowRight, Sparkles, Check } from "lucide-react";
+import { ArrowRight, Sparkles, Check, Upload, FileText, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -58,14 +58,59 @@ function OnboardingPage() {
   const [jobRole, setJobRole] = useState("");
   const [experience, setExperience] = useState<string>("fresher");
   const [mode, setMode] = useState<string>("friendly");
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!profile) return;
     setJobRole(profile.default_job_role ?? "");
     setExperience(profile.default_experience_level ?? "fresher");
     setMode(profile.default_interview_mode ?? "friendly");
+    setResumeUrl(profile.resume_url ?? null);
+    setResumeFileName(profile.resume_file_name ?? null);
   }, [profile]);
+
+  const ACCEPTED = ["application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"];
+  const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+  const handleUpload = async (file: File) => {
+    if (!ACCEPTED.includes(file.type)) {
+      toast.error("Upload a PDF or image (PNG, JPG, WEBP)");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("File is too large. Max 10 MB.");
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "pdf";
+    const path = `${userId}/resume-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("resumes").upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: file.type,
+    });
+    if (upErr) {
+      setUploading(false);
+      toast.error(upErr.message);
+      return;
+    }
+    setResumeUrl(path);
+    setResumeFileName(file.name);
+    setUploading(false);
+    toast.success("Resume uploaded");
+  };
+
+  const removeResume = async () => {
+    if (resumeUrl) {
+      await supabase.storage.from("resumes").remove([resumeUrl]);
+    }
+    setResumeUrl(null);
+    setResumeFileName(null);
+  };
 
   const finish = async () => {
     if (!jobRole.trim()) {
@@ -81,6 +126,8 @@ function OnboardingPage() {
       default_job_role: jobRole.trim(),
       default_experience_level: experience,
       default_interview_mode: mode,
+      resume_url: resumeUrl,
+      resume_file_name: resumeFileName,
       onboarding_completed: true,
     };
 
@@ -107,7 +154,7 @@ function OnboardingPage() {
     <div className="px-6 py-10 max-w-2xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="w-3.5 h-3.5 text-primary-glow" /> Quick setup · Step {step + 1} of 3
+          <Sparkles className="w-3.5 h-3.5 text-primary-glow" /> Quick setup · Step {step + 1} of 4
         </div>
         <h1 className="mt-2 text-3xl md:text-4xl font-bold">
           {step === 0 && (
@@ -125,16 +172,24 @@ function OnboardingPage() {
               Pick your <span className="text-gradient">default vibe</span>
             </>
           )}
+          {step === 3 && (
+            <>
+              Upload your <span className="text-gradient">resume</span>{" "}
+              <span className="text-muted-foreground text-xl md:text-2xl font-medium">(optional)</span>
+            </>
+          )}
         </h1>
         <p className="mt-2 text-muted-foreground text-sm">
-          We'll use this to tailor every new interview. You can change it any time in Settings.
+          {step === 3
+            ? "PDF or image (PNG, JPG, WEBP), up to 10 MB. We'll use it to personalise your interviews."
+            : "We'll use this to tailor every new interview. You can change it any time in Settings."}
         </p>
       </motion.div>
 
       <div className="mt-6 h-1.5 rounded-full clay-inset overflow-hidden">
         <motion.div
           initial={false}
-          animate={{ width: `${((step + 1) / 3) * 100}%` }}
+          animate={{ width: `${((step + 1) / 4) * 100}%` }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="h-full"
           style={{ background: "var(--gradient-primary)" }}
@@ -199,6 +254,62 @@ function OnboardingPage() {
             ))}
           </div>
         )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            />
+            {!resumeUrl ? (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full clay-inset rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center hover:bg-foreground/[0.02] transition disabled:opacity-60"
+              >
+                <span
+                  className="grid place-items-center w-12 h-12 rounded-2xl"
+                  style={{ background: "var(--gradient-primary)" }}
+                >
+                  <Upload className="w-5 h-5 text-primary-foreground" />
+                </span>
+                <span className="font-medium text-sm">
+                  {uploading ? "Uploading…" : "Click to upload your resume"}
+                </span>
+                <span className="text-xs text-muted-foreground">PDF, PNG, JPG or WEBP · up to 10 MB</span>
+              </button>
+            ) : (
+              <div className="clay-sm rounded-2xl p-4 flex items-center gap-3">
+                <span className="grid place-items-center w-10 h-10 rounded-xl clay-inset shrink-0">
+                  <FileText className="w-4 h-4 text-primary-glow" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{resumeFileName ?? "Resume"}</div>
+                  <div className="text-xs text-muted-foreground">Uploaded · ready to use</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeResume}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                  aria-label="Remove resume"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center">
+              Skip this step if you'd rather upload later from Settings.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex items-center justify-between">
@@ -210,7 +321,7 @@ function OnboardingPage() {
         >
           Back
         </button>
-        {step < 2 ? (
+        {step < 3 ? (
           <button
             type="button"
             onClick={() => {
@@ -218,14 +329,14 @@ function OnboardingPage() {
                 toast.error("Add a job role first");
                 return;
               }
-              setStep((s) => Math.min(2, s + 1));
+              setStep((s) => Math.min(3, s + 1));
             }}
             className="btn-clay"
           >
             Continue <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
-          <button type="button" onClick={finish} disabled={saving} className="btn-clay">
+          <button type="button" onClick={finish} disabled={saving || uploading} className="btn-clay">
             {saving ? "Saving…" : <>Finish setup <ArrowRight className="w-4 h-4" /></>}
           </button>
         )}

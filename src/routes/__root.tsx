@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { Toaster } from "sonner";
+import { CookieBanner } from "../components/CookieBanner";
 
 function NotFoundComponent() {
   return (
@@ -131,6 +132,7 @@ function RootComponent() {
         <Toaster richColors position="top-center" theme="dark" />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <CookieBanner />
       </AuthProvider>
     </QueryClientProvider>
   );
