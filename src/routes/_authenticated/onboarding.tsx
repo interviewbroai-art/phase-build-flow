@@ -1,9 +1,9 @@
 import { Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { ArrowRight, Sparkles, Check } from "lucide-react";
+import { ArrowRight, Sparkles, Check, Upload, FileText, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -58,14 +58,59 @@ function OnboardingPage() {
   const [jobRole, setJobRole] = useState("");
   const [experience, setExperience] = useState<string>("fresher");
   const [mode, setMode] = useState<string>("friendly");
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!profile) return;
     setJobRole(profile.default_job_role ?? "");
     setExperience(profile.default_experience_level ?? "fresher");
     setMode(profile.default_interview_mode ?? "friendly");
+    setResumeUrl(profile.resume_url ?? null);
+    setResumeFileName(profile.resume_file_name ?? null);
   }, [profile]);
+
+  const ACCEPTED = ["application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"];
+  const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+  const handleUpload = async (file: File) => {
+    if (!ACCEPTED.includes(file.type)) {
+      toast.error("Upload a PDF or image (PNG, JPG, WEBP)");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("File is too large. Max 10 MB.");
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "pdf";
+    const path = `${userId}/resume-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("resumes").upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: file.type,
+    });
+    if (upErr) {
+      setUploading(false);
+      toast.error(upErr.message);
+      return;
+    }
+    setResumeUrl(path);
+    setResumeFileName(file.name);
+    setUploading(false);
+    toast.success("Resume uploaded");
+  };
+
+  const removeResume = async () => {
+    if (resumeUrl) {
+      await supabase.storage.from("resumes").remove([resumeUrl]);
+    }
+    setResumeUrl(null);
+    setResumeFileName(null);
+  };
 
   const finish = async () => {
     if (!jobRole.trim()) {
