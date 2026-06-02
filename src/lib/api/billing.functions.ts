@@ -87,7 +87,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       .parse(input)
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keySecret) throw new Error("Payment gateway not configured");
 
@@ -95,7 +95,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     const payload = `${data.razorpay_order_id}|${data.razorpay_payment_id}`;
     const expected = createHmac("sha256", keySecret).update(payload).digest("hex");
     if (expected !== data.razorpay_signature) {
-      await supabase
+      await supabaseAdmin
         .from("payments")
         .update({ status: "failed", razorpay_payment_id: data.razorpay_payment_id })
         .eq("razorpay_order_id", data.razorpay_order_id)
@@ -103,8 +103,8 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       throw new Error("Payment signature verification failed");
     }
 
-    // Find the payment row
-    const { data: paymentRow, error: fetchErr } = await supabase
+    // Find the payment row (admin client — payments table is server-managed)
+    const { data: paymentRow, error: fetchErr } = await supabaseAdmin
       .from("payments")
       .select("*")
       .eq("razorpay_order_id", data.razorpay_order_id)
@@ -117,10 +117,9 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     if (!plan) throw new Error("Invalid plan on payment");
 
     const now = new Date();
-    const expires = new Date(now.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
     // Mark paid
-    const { error: payUpdateErr } = await supabase
+    const { error: payUpdateErr } = await supabaseAdmin
       .from("payments")
       .update({
         status: "paid",
@@ -133,7 +132,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     if (payUpdateErr) throw new Error(payUpdateErr.message);
 
     // Activate plan on profile — extend if already on same/better plan
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("plan, plan_expires_at")
       .eq("id", userId)
@@ -145,7 +144,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
         : now;
     const newExpires = new Date(currentExpires.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
-    const { error: profileErr } = await supabase
+    const { error: profileErr } = await supabaseAdmin
       .from("profiles")
       .update({
         plan: plan.id,
