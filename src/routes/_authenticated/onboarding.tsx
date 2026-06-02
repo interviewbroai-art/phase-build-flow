@@ -179,10 +179,18 @@ function OnboardingPage() {
               <span className="text-muted-foreground text-xl md:text-2xl font-medium">(optional)</span>
             </>
           )}
+          {step === 4 && (
+            <>
+              Pick a <span className="text-gradient">plan</span>{" "}
+              <span className="text-muted-foreground text-xl md:text-2xl font-medium">(you can start free)</span>
+            </>
+          )}
         </h1>
         <p className="mt-2 text-muted-foreground text-sm">
           {step === 3
             ? "PDF or image (PNG, JPG, WEBP), up to 10 MB. We'll use it to personalise your interviews."
+            : step === 4
+            ? "Start free — no card needed. Upgrade any time from Billing to unlock more interviews and advanced feedback."
             : "We'll use this to tailor every new interview. You can change it any time in Settings."}
         </p>
       </motion.div>
@@ -190,7 +198,7 @@ function OnboardingPage() {
       <div className="mt-6 h-1.5 rounded-full clay-inset overflow-hidden">
         <motion.div
           initial={false}
-          animate={{ width: `${((step + 1) / 4) * 100}%` }}
+          animate={{ width: `${((step + 1) / 5) * 100}%` }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="h-full"
           style={{ background: "var(--gradient-primary)" }}
