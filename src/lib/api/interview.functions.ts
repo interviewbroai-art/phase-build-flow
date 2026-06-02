@@ -125,20 +125,9 @@ export const interviewChat = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    // Server-side plan quota enforcement (prevents bypassing the client UI gate)
-    if (data.history.length === 0) {
-      const { supabase } = context;
-      const { error: quotaErr } = await supabase.rpc("enforce_interview_quota", {
-        p_user: context.userId,
-      });
-      if (quotaErr) {
-        throw new Error(
-          quotaErr.message?.includes("quota exceeded")
-            ? "Monthly interview quota reached for your plan. Upgrade to continue."
-            : quotaErr.message,
-        );
-      }
-    }
+    // Quota is enforced at the DB level via a BEFORE INSERT trigger on
+    // interview_sessions (tg_enforce_interview_quota). That cannot be bypassed
+    // by tampering with `history` or by direct client inserts.
 
     const messages: Msg[] = [
       { role: "system", content: systemPrompt(data) },
