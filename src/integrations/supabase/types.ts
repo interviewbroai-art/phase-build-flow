@@ -301,6 +301,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      enforce_interview_quota: { Args: { p_user: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
