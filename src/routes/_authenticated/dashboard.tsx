@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { UpgradeReminder } from "@/components/UpgradeReminder";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -87,6 +88,7 @@ function Dashboard() {
 
   return (
     <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
+      <UpgradeReminder plan={(profile as any)?.plan} planExpiresAt={(profile as any)?.plan_expires_at} />
       {/* Mobile brand */}
       <div className="lg:hidden mb-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
