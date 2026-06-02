@@ -319,6 +319,60 @@ function OnboardingPage() {
             </p>
           </div>
         )}
+
+        {step === 4 && (
+          <div className="grid gap-3 md:grid-cols-3">
+            {(["free", "pro", "premium"] as const).map((pid) => {
+              const p = PLANS[pid];
+              const featured = pid === "pro";
+              return (
+                <div
+                  key={pid}
+                  className={
+                    "p-4 rounded-2xl flex flex-col gap-3 " +
+                    (featured ? "clay-sm ring-2 ring-primary/40" : "clay-inset")
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                        {p.tagline}
+                      </div>
+                      <div className="font-display font-bold text-lg flex items-center gap-1.5">
+                        {pid !== "free" && <Crown className="w-4 h-4 text-primary-glow" />}
+                        {p.name}
+                      </div>
+                    </div>
+                    {p.badge && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full clay-sm text-primary-glow">
+                        {p.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-display font-bold text-2xl text-gradient">
+                      {p.priceLabel}
+                    </span>
+                    {p.pricePaise > 0 && (
+                      <span className="text-xs text-muted-foreground">/month</span>
+                    )}
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-muted-foreground flex-1">
+                    {p.features.slice(0, 4).map((f) => (
+                      <li key={f} className="flex items-start gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-primary-glow mt-0.5 shrink-0" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+            <p className="md:col-span-3 text-xs text-muted-foreground text-center mt-1">
+              You'll start on the Free plan. Upgrade any time from Billing — no pressure.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex items-center justify-between">
@@ -330,7 +384,7 @@ function OnboardingPage() {
         >
           Back
         </button>
-        {step < 3 ? (
+        {step < 4 ? (
           <button
             type="button"
             onClick={() => {
@@ -338,16 +392,29 @@ function OnboardingPage() {
                 toast.error("Add a job role first");
                 return;
               }
-              setStep((s) => Math.min(3, s + 1));
+              setStep((s) => Math.min(4, s + 1));
             }}
             className="btn-clay"
           >
             Continue <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
-          <button type="button" onClick={finish} disabled={saving || uploading} className="btn-clay">
-            {saving ? "Saving…" : <>Finish setup <ArrowRight className="w-4 h-4" /></>}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await finish();
+                navigate({ to: "/upgrade" });
+              }}
+              disabled={saving || uploading}
+              className="btn-ghost-clay text-sm"
+            >
+              <Crown className="w-4 h-4" /> See upgrade options
+            </button>
+            <button type="button" onClick={finish} disabled={saving || uploading} className="btn-clay">
+              {saving ? "Saving…" : <>Start with Free <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </div>
         )}
       </div>
     </div>
