@@ -124,7 +124,22 @@ export const interviewChat = createServerFn({ method: "POST" })
       questionNumber: z.number().int().min(1).max(30),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Server-side plan quota enforcement (prevents bypassing the client UI gate)
+    if (data.history.length === 0) {
+      const { supabase } = context;
+      const { error: quotaErr } = await supabase.rpc("enforce_interview_quota", {
+        p_user: context.userId,
+      });
+      if (quotaErr) {
+        throw new Error(
+          quotaErr.message?.includes("quota exceeded")
+            ? "Monthly interview quota reached for your plan. Upgrade to continue."
+            : quotaErr.message,
+        );
+      }
+    }
+
     const messages: Msg[] = [
       { role: "system", content: systemPrompt(data) },
       ...data.history,
