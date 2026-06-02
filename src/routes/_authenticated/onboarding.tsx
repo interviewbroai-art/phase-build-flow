@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { ArrowRight, Sparkles, Check, Upload, FileText, X } from "lucide-react";
+import { ArrowRight, Sparkles, Check, Upload, FileText, X, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PLANS } from "@/lib/billing/plans";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
