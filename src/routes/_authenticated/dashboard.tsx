@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { UpgradeReminder } from "@/components/UpgradeReminder";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
