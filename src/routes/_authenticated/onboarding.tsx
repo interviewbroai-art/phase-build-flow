@@ -155,7 +155,7 @@ function OnboardingPage() {
     <div className="px-6 py-10 max-w-2xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="w-3.5 h-3.5 text-primary-glow" /> Quick setup · Step {step + 1} of 4
+          <Sparkles className="w-3.5 h-3.5 text-primary-glow" /> Quick setup · Step {step + 1} of 5
         </div>
         <h1 className="mt-2 text-3xl md:text-4xl font-bold">
           {step === 0 && (
