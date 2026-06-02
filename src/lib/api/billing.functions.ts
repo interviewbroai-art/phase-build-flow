@@ -48,8 +48,8 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     }
     const order = (await res.json()) as { id: string; amount: number; currency: string };
 
-    // Store pending payment row
-    const { error: insertErr } = await supabase.from("payments").insert({
+    // Store pending payment row using service role (users no longer have INSERT on payments)
+    const { error: insertErr } = await supabaseAdmin.from("payments").insert({
       user_id: userId,
       plan: plan.id,
       amount_paise: plan.pricePaise,
