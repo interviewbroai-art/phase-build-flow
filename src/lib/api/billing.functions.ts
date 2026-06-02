@@ -14,7 +14,7 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     z.object({ planId: z.enum(PLAN_IDS) }).parse(input)
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     const plan = PLANS[data.planId as PlanId];
     if (!plan || plan.pricePaise <= 0) {
       throw new Error("Invalid plan");
