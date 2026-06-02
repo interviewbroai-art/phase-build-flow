@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHmac } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLANS, type PlanId, effectivePlan, getPlanLimits } from "@/lib/billing/plans";
 
 const PLAN_IDS = ["pro", "premium"] as const;
