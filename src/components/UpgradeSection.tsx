@@ -108,7 +108,6 @@ export function UpgradeSection({ plan, planExpiresAt }: Props) {
               ) : (
                 <Link
                   to="/upgrade"
-                  search={{ plan: pid as PlanId } as never}
                   className={featured ? "btn-clay justify-center text-sm" : "btn-ghost-clay justify-center text-sm"}
                 >
                   <Crown className="w-4 h-4" /> Upgrade to {p.name}
