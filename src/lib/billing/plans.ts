@@ -36,8 +36,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "pro",
     name: "Pro",
     tagline: "Crack placements",
-    pricePaise: 29900, // ₹299
-    priceLabel: "₹299",
+    pricePaise: 19900, // ₹199
+    priceLabel: "₹199",
     durationDays: 30,
     interviewsPerMonth: 50,
     badge: "Most popular",
@@ -55,8 +55,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "premium",
     name: "Premium",
     tagline: "Land the offer",
-    pricePaise: 59900, // ₹599
-    priceLabel: "₹599",
+    pricePaise: 39900, // ₹399
+    priceLabel: "₹399",
     durationDays: 30,
     interviewsPerMonth: -1,
     features: [

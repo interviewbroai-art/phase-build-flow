@@ -21,6 +21,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { UpgradeReminder } from "@/components/UpgradeReminder";
+import { UpgradeSection } from "@/components/UpgradeSection";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -135,6 +136,8 @@ function Dashboard() {
         </div>
 
       </motion.div>
+
+      <UpgradeSection plan={(profile as any)?.plan} planExpiresAt={(profile as any)?.plan_expires_at} />
 
       {/* Stats */}
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
