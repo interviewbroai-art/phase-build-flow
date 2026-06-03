@@ -37,7 +37,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Pro",
     tagline: "Crack placements",
     pricePaise: 19900, // ₹199
-    priceLabel: "₹299",
+    priceLabel: "₹199",
     durationDays: 30,
     interviewsPerMonth: 50,
     badge: "Most popular",
