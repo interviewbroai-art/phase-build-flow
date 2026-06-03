@@ -27,6 +27,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedSessionsSessionIdRouteImport } from './routes/_authenticated/sessions.$sessionId'
+import { Route as AuthenticatedInterviewVoiceRouteImport } from './routes/_authenticated/interview.voice'
 import { Route as AuthenticatedInterviewNewRouteImport } from './routes/_authenticated/interview.new'
 import { Route as AuthenticatedInterviewSessionIdRouteImport } from './routes/_authenticated/interview.$sessionId'
 
@@ -121,6 +122,12 @@ const AuthenticatedSessionsSessionIdRoute =
     path: '/sessions/$sessionId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInterviewVoiceRoute =
+  AuthenticatedInterviewVoiceRouteImport.update({
+    id: '/interview/voice',
+    path: '/interview/voice',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInterviewNewRoute =
   AuthenticatedInterviewNewRouteImport.update({
     id: '/interview/new',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
 export interface FileRoutesByTo {
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
 export interface FileRoutesById {
@@ -197,6 +206,7 @@ export interface FileRoutesById {
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/_authenticated/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/_authenticated/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/_authenticated/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
 export interface FileRouteTypes {
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/interview/$sessionId'
     | '/interview/new'
+    | '/interview/voice'
     | '/sessions/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/interview/$sessionId'
     | '/interview/new'
+    | '/interview/voice'
     | '/sessions/$sessionId'
   id:
     | '__root__'
@@ -263,6 +275,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upgrade'
     | '/_authenticated/interview/$sessionId'
     | '/_authenticated/interview/new'
+    | '/_authenticated/interview/voice'
     | '/_authenticated/sessions/$sessionId'
   fileRoutesById: FileRoutesById
 }
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSessionsSessionIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/interview/voice': {
+      id: '/_authenticated/interview/voice'
+      path: '/interview/voice'
+      fullPath: '/interview/voice'
+      preLoaderRoute: typeof AuthenticatedInterviewVoiceRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/interview/new': {
       id: '/_authenticated/interview/new'
       path: '/interview/new'
@@ -434,6 +454,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedInterviewSessionIdRoute: typeof AuthenticatedInterviewSessionIdRoute
   AuthenticatedInterviewNewRoute: typeof AuthenticatedInterviewNewRoute
+  AuthenticatedInterviewVoiceRoute: typeof AuthenticatedInterviewVoiceRoute
   AuthenticatedSessionsSessionIdRoute: typeof AuthenticatedSessionsSessionIdRoute
 }
 
@@ -447,6 +468,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedInterviewSessionIdRoute: AuthenticatedInterviewSessionIdRoute,
   AuthenticatedInterviewNewRoute: AuthenticatedInterviewNewRoute,
+  AuthenticatedInterviewVoiceRoute: AuthenticatedInterviewVoiceRoute,
   AuthenticatedSessionsSessionIdRoute: AuthenticatedSessionsSessionIdRoute,
 }
 
