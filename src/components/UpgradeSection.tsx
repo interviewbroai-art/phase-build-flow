@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { Check, Crown, Sparkles, ArrowRight } from "lucide-react";
-import { PLANS, effectivePlan, type PlanId } from "@/lib/billing/plans";
+import { PLANS, effectivePlan } from "@/lib/billing/plans";
 
 type Props = {
   plan: string | null | undefined;
