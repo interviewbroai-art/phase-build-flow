@@ -17,6 +17,7 @@ import {
   Check,
   X as XIcon,
   CalendarDays,
+  Mic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -133,7 +134,11 @@ function Dashboard() {
           <Link to="/interview/new" className="btn-clay">
             <Play className="w-4 h-4" /> Start new interview
           </Link>
+          <Link to="/interview/voice" className="btn-ghost-clay">
+            <Mic className="w-4 h-4" /> Voice mode
+          </Link>
         </div>
+
 
       </motion.div>
 
