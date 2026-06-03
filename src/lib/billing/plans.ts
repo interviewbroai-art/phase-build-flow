@@ -55,8 +55,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "premium",
     name: "Premium",
     tagline: "Land the offer",
-    pricePaise: 59900, // ₹599
-    priceLabel: "₹599",
+    pricePaise: 39900, // ₹399
+    priceLabel: "₹399",
     durationDays: 30,
     interviewsPerMonth: -1,
     features: [
