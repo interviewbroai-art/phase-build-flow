@@ -21,6 +21,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { UpgradeReminder } from "@/components/UpgradeReminder";
+import { UpgradeSection } from "@/components/UpgradeSection";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
