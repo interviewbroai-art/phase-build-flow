@@ -137,6 +137,8 @@ function Dashboard() {
 
       </motion.div>
 
+      <UpgradeSection plan={(profile as any)?.plan} planExpiresAt={(profile as any)?.plan_expires_at} />
+
       {/* Stats */}
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Flame} label="Current streak" value={`${streak} days`} sub={`Best: ${longest}`} accent />
