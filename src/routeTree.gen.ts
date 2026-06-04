@@ -28,6 +28,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedSessionsSessionIdRouteImport } from './routes/_authenticated/sessions.$sessionId'
 import { Route as AuthenticatedInterviewVoiceRouteImport } from './routes/_authenticated/interview.voice'
+import { Route as AuthenticatedInterviewVideoRouteImport } from './routes/_authenticated/interview.video'
 import { Route as AuthenticatedInterviewNewRouteImport } from './routes/_authenticated/interview.new'
 import { Route as AuthenticatedInterviewSessionIdRouteImport } from './routes/_authenticated/interview.$sessionId'
 
@@ -128,6 +129,12 @@ const AuthenticatedInterviewVoiceRoute =
     path: '/interview/voice',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInterviewVideoRoute =
+  AuthenticatedInterviewVideoRouteImport.update({
+    id: '/interview/video',
+    path: '/interview/video',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInterviewNewRoute =
   AuthenticatedInterviewNewRouteImport.update({
     id: '/interview/new',
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/interview/video': typeof AuthenticatedInterviewVideoRoute
   '/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/interview/video': typeof AuthenticatedInterviewVideoRoute
   '/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/interview/$sessionId': typeof AuthenticatedInterviewSessionIdRoute
   '/_authenticated/interview/new': typeof AuthenticatedInterviewNewRoute
+  '/_authenticated/interview/video': typeof AuthenticatedInterviewVideoRoute
   '/_authenticated/interview/voice': typeof AuthenticatedInterviewVoiceRoute
   '/_authenticated/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdRoute
 }
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/interview/$sessionId'
     | '/interview/new'
+    | '/interview/video'
     | '/interview/voice'
     | '/sessions/$sessionId'
   fileRoutesByTo: FileRoutesByTo
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/interview/$sessionId'
     | '/interview/new'
+    | '/interview/video'
     | '/interview/voice'
     | '/sessions/$sessionId'
   id:
@@ -275,6 +287,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upgrade'
     | '/_authenticated/interview/$sessionId'
     | '/_authenticated/interview/new'
+    | '/_authenticated/interview/video'
     | '/_authenticated/interview/voice'
     | '/_authenticated/sessions/$sessionId'
   fileRoutesById: FileRoutesById
@@ -427,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInterviewVoiceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/interview/video': {
+      id: '/_authenticated/interview/video'
+      path: '/interview/video'
+      fullPath: '/interview/video'
+      preLoaderRoute: typeof AuthenticatedInterviewVideoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/interview/new': {
       id: '/_authenticated/interview/new'
       path: '/interview/new'
@@ -454,6 +474,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedInterviewSessionIdRoute: typeof AuthenticatedInterviewSessionIdRoute
   AuthenticatedInterviewNewRoute: typeof AuthenticatedInterviewNewRoute
+  AuthenticatedInterviewVideoRoute: typeof AuthenticatedInterviewVideoRoute
   AuthenticatedInterviewVoiceRoute: typeof AuthenticatedInterviewVoiceRoute
   AuthenticatedSessionsSessionIdRoute: typeof AuthenticatedSessionsSessionIdRoute
 }
@@ -468,6 +489,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedInterviewSessionIdRoute: AuthenticatedInterviewSessionIdRoute,
   AuthenticatedInterviewNewRoute: AuthenticatedInterviewNewRoute,
+  AuthenticatedInterviewVideoRoute: AuthenticatedInterviewVideoRoute,
   AuthenticatedInterviewVoiceRoute: AuthenticatedInterviewVoiceRoute,
   AuthenticatedSessionsSessionIdRoute: AuthenticatedSessionsSessionIdRoute,
 }
@@ -491,13 +513,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
