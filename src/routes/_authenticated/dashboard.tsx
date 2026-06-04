@@ -18,6 +18,7 @@ import {
   X as XIcon,
   CalendarDays,
   Mic,
+  Video,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -136,6 +137,9 @@ function Dashboard() {
           </Link>
           <Link to="/interview/voice" className="btn-ghost-clay">
             <Mic className="w-4 h-4" /> Voice mode
+          </Link>
+          <Link to="/interview/video" className="btn-ghost-clay">
+            <Video className="w-4 h-4" /> Video simulation
           </Link>
         </div>
 
