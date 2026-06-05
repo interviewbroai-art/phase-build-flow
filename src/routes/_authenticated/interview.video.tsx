@@ -357,6 +357,7 @@ function VideoInterview() {
   }
 
   async function endCall() {
+    if (endingRef.current) return;
     setCallActive(false);
     callActiveRef.current = false;
     stopListening();
@@ -391,6 +392,35 @@ function VideoInterview() {
       } catch {
         // ignore
       }
+    }
+
+    const interviewSessionId = interviewSessionIdRef.current;
+    const finalTranscript = transcriptRef.current;
+    const hasCandidateAnswer = finalTranscript.some((t) => t.role === "user");
+    if (!interviewSessionId || !hasCandidateAnswer) return;
+
+    setEnding(true);
+    endingRef.current = true;
+    const toastId = toast.loading("Scoring your video interview…");
+    try {
+      await scoreFn({
+        data: {
+          sessionId: interviewSessionId,
+          jobRole: jobRole.trim() || "Software Engineer",
+          experience,
+          difficulty: "medium",
+          durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
+          transcript: finalTranscript,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["profile", userId] });
+      await qc.invalidateQueries({ queryKey: ["sessions", userId] });
+      toast.success("Video interview complete! Score saved and XP awarded.", { id: toastId });
+      navigate({ to: "/sessions/$sessionId", params: { sessionId: interviewSessionId }, replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Scoring failed", { id: toastId });
+      setEnding(false);
+      endingRef.current = false;
     }
   }
 
