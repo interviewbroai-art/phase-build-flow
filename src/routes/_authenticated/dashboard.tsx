@@ -476,21 +476,22 @@ function StatCard({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="clay p-5"
+      className="clay p-3.5 md:p-5"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 md:gap-3">
         <span
-          className={`w-10 h-10 rounded-2xl grid place-items-center ${
+          className={`w-8 h-8 md:w-10 md:h-10 rounded-2xl grid place-items-center shrink-0 ${
             accent ? "" : "clay-sm"
           }`}
           style={accent ? { background: "var(--gradient-primary)", boxShadow: "var(--shadow-clay-sm)" } : undefined}
         >
-          <Icon className={`w-4 h-4 ${accent ? "text-primary-foreground" : "text-primary-glow"}`} />
+          <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${accent ? "text-primary-foreground" : "text-primary-glow"}`} />
         </span>
-        <span className="text-xs text-muted-foreground uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-widest leading-tight">{label}</span>
       </div>
-      <div className="mt-3 text-2xl font-display font-bold">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+      <div className="mt-2 md:mt-3 text-lg md:text-2xl font-display font-bold">{value}</div>
+      {sub && <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{sub}</div>}
+
       {pct != null && (
         <div className="mt-3 h-1.5 rounded-full clay-inset overflow-hidden">
           <motion.div
