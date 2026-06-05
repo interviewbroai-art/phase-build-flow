@@ -188,6 +188,33 @@ function VideoInterview() {
     setListening(false);
   }
 
+  async function waitForStreamReady() {
+    for (let i = 0; i < 20; i += 1) {
+      if (streamReadyRef.current) return;
+      await new Promise((resolve) => window.setTimeout(resolve, 150));
+    }
+  }
+
+  async function createInterviewSession() {
+    const { data, error } = await supabase
+      .from("interview_sessions")
+      .insert({
+        user_id: userId,
+        job_role: jobRole.trim() || "Software Engineer",
+        experience_level: experience,
+        interview_type: "video",
+        mode: "video",
+        language: "en",
+        difficulty: "medium",
+        depth: "moderate",
+        status: "in_progress",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  }
+
   async function handleUserTurn(text: string) {
     const next: Turn[] = [
       ...transcriptRef.current,
@@ -210,6 +237,7 @@ function VideoInterview() {
       ];
       setTranscript(next);
       if (streamIdRef.current && sessionIdRef.current) {
+        await waitForStreamReady();
         await speakFn({
           data: {
             streamId: streamIdRef.current,
