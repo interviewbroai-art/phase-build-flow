@@ -90,23 +90,23 @@ function Dashboard() {
 
 
   return (
-    <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
+    <div className="px-4 py-5 md:px-6 md:py-10 max-w-6xl mx-auto">
       <UpgradeReminder plan={(profile as any)?.plan} planExpiresAt={(profile as any)?.plan_expires_at} />
       {/* Mobile brand */}
-      <div className="lg:hidden mb-6 flex items-center justify-between">
+      <div className="lg:hidden mb-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <span className="grid place-items-center w-9 h-9 rounded-2xl clay-sm">
-            <Sparkles className="w-4 h-4 text-primary-glow" />
+          <span className="grid place-items-center w-8 h-8 rounded-2xl clay-sm">
+            <Sparkles className="w-3.5 h-3.5 text-primary-glow" />
           </span>
-          <span className="font-display font-bold">
+          <span className="font-display font-bold text-sm">
             InterviewBro<span className="text-gradient"> AI</span>
           </span>
         </Link>
-        <Link to="/settings" className="w-9 h-9 rounded-2xl clay-sm grid place-items-center overflow-hidden">
+        <Link to="/settings" className="w-8 h-8 rounded-2xl clay-sm grid place-items-center overflow-hidden">
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-xs font-display font-bold text-gradient">
+            <span className="text-[10px] font-display font-bold text-gradient">
               {firstName.slice(0, 2).toUpperCase()}
             </span>
           )}
@@ -118,14 +118,14 @@ function Dashboard() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-end md:justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 md:gap-4"
       >
         <div>
-          <p className="text-sm text-muted-foreground">Welcome back</p>
-          <h1 className="mt-1 text-3xl md:text-4xl font-bold">
+          <p className="text-xs md:text-sm text-muted-foreground">Welcome back</p>
+          <h1 className="mt-0.5 text-2xl md:text-4xl font-bold">
             Hi {firstName} <span className="text-gradient">👋</span>
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm max-w-md">
+          <p className="mt-1 md:mt-2 text-muted-foreground text-xs md:text-sm max-w-md">
             {profile?.default_job_role
               ? `Defaults: ${profile.default_job_role} · ${profile.default_interview_mode}`
               : "Set up your defaults in Settings."}
@@ -156,7 +156,7 @@ function Dashboard() {
       })()}
 
       {/* Stats */}
-      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 md:mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard icon={Flame} label="Current streak" value={`${streak} days`} sub={`Best: ${longest}`} accent />
         <StatCard
           icon={Zap}
@@ -168,6 +168,7 @@ function Dashboard() {
         <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} />
         <StatCard icon={Target} label="Sessions (30d)" value={String(weekly?.length ?? 0)} />
       </div>
+
 
       {/* Streak analytics widget */}
       <StreakWidget sessions={weekly ?? []} currentStreak={streak} longest={longest} />
@@ -339,7 +340,7 @@ function StreakWidget({
   }, [days]);
 
   return (
-    <section className="mt-8 clay p-6">
+    <section className="mt-6 md:mt-8 clay p-4 md:p-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
@@ -389,13 +390,14 @@ function StreakWidget({
               </div>
               <div
                 className={
-                  "mt-1.5 mx-auto w-10 h-10 sm:w-12 sm:h-12 rounded-2xl grid place-items-center transition " +
+                  "mt-1.5 mx-auto w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl grid place-items-center transition " +
                   (done
                     ? "clay-sm ring-1 ring-primary/40"
                     : d.isToday
                     ? "clay-inset ring-1 ring-accent/40"
                     : "clay-inset opacity-60")
                 }
+
                 style={
                   done ? { background: "var(--gradient-primary)" } : undefined
                 }
@@ -475,21 +477,22 @@ function StatCard({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="clay p-5"
+      className="clay p-3.5 md:p-5"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 md:gap-3">
         <span
-          className={`w-10 h-10 rounded-2xl grid place-items-center ${
+          className={`w-8 h-8 md:w-10 md:h-10 rounded-2xl grid place-items-center shrink-0 ${
             accent ? "" : "clay-sm"
           }`}
           style={accent ? { background: "var(--gradient-primary)", boxShadow: "var(--shadow-clay-sm)" } : undefined}
         >
-          <Icon className={`w-4 h-4 ${accent ? "text-primary-foreground" : "text-primary-glow"}`} />
+          <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${accent ? "text-primary-foreground" : "text-primary-glow"}`} />
         </span>
-        <span className="text-xs text-muted-foreground uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-widest leading-tight">{label}</span>
       </div>
-      <div className="mt-3 text-2xl font-display font-bold">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+      <div className="mt-2 md:mt-3 text-lg md:text-2xl font-display font-bold">{value}</div>
+      {sub && <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{sub}</div>}
+
       {pct != null && (
         <div className="mt-3 h-1.5 rounded-full clay-inset overflow-hidden">
           <motion.div
