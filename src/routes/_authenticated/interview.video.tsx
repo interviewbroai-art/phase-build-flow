@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { effectivePlan } from "@/lib/billing/plans";
+import { scoreInterview } from "@/lib/api/interview.functions";
 import {
   closeDidStream,
   createDidStream,
@@ -38,6 +39,8 @@ type Turn = { role: "user" | "assistant"; content: string };
 function VideoInterview() {
   const { user } = useAuth();
   const userId = user!.id;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const createFn = useServerFn(createDidStream);
   const sdpFn = useServerFn(sendDidSdpAnswer);
@@ -45,6 +48,7 @@ function VideoInterview() {
   const speakFn = useServerFn(speakOnDidStream);
   const closeFn = useServerFn(closeDidStream);
   const brainFn = useServerFn(videoInterviewBrain);
+  const scoreFn = useServerFn(scoreInterview);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-video", userId],
