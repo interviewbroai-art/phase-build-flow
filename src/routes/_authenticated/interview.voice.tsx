@@ -206,6 +206,26 @@ function VoiceInterview() {
     await handleAssistantTurn(next);
   }
 
+  async function createInterviewSession() {
+    const { data, error } = await supabase
+      .from("interview_sessions")
+      .insert({
+        user_id: userId,
+        job_role: jobRole.trim() || "Software Engineer",
+        experience_level: experience,
+        interview_type: "voice",
+        mode: "voice",
+        language: "en",
+        difficulty: "medium",
+        depth: "moderate",
+        status: "in_progress",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  }
+
   async function startCall() {
     if (!supported) {
       toast.error("Voice mode isn't supported in this browser. Try Chrome on desktop.");
@@ -219,13 +239,23 @@ function VoiceInterview() {
     }
     // Prime voices list
     window.speechSynthesis.getVoices();
-    setTranscript([]);
-    setCallActive(true);
-    callActiveRef.current = true;
-    await handleAssistantTurn([]);
+    const toastId = toast.loading("Starting voice interview…");
+    try {
+      const sessionId = await createInterviewSession();
+      interviewSessionIdRef.current = sessionId;
+      startedAtRef.current = Date.now();
+      setTranscript([]);
+      setCallActive(true);
+      callActiveRef.current = true;
+      toast.dismiss(toastId);
+      await handleAssistantTurn([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start voice interview", { id: toastId });
+    }
   }
 
-  function endCall() {
+  async function endCall() {
+    if (endingRef.current) return;
     setCallActive(false);
     callActiveRef.current = false;
     stopListening();
@@ -235,6 +265,35 @@ function VoiceInterview() {
     setSpeaking(false);
     setThinking(false);
     setInterim("");
+
+    const sessionId = interviewSessionIdRef.current;
+    const finalTranscript = transcriptRef.current;
+    const hasCandidateAnswer = finalTranscript.some((t) => t.role === "user");
+    if (!sessionId || !hasCandidateAnswer) return;
+
+    setEnding(true);
+    endingRef.current = true;
+    const toastId = toast.loading("Scoring your voice interview…");
+    try {
+      await scoreFn({
+        data: {
+          sessionId,
+          jobRole: jobRole.trim() || "Software Engineer",
+          experience,
+          difficulty: "medium",
+          durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
+          transcript: finalTranscript,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["profile", userId] });
+      await qc.invalidateQueries({ queryKey: ["sessions", userId] });
+      toast.success("Voice interview complete! Score saved and XP awarded.", { id: toastId });
+      navigate({ to: "/sessions/$sessionId", params: { sessionId }, replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Scoring failed", { id: toastId });
+      setEnding(false);
+      endingRef.current = false;
+    }
   }
 
   useEffect(() => {
