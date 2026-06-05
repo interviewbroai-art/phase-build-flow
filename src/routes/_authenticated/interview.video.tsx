@@ -283,6 +283,16 @@ function VideoInterview() {
 
       const pc = new RTCPeerConnection({ iceServers: stream.ice_servers });
       pcRef.current = pc;
+      streamReadyRef.current = false;
+
+      const dataChannel = pc.createDataChannel("JanusDataChannel");
+      dataChannel.addEventListener("message", (message) => {
+        if (String(message.data).startsWith("stream/ready")) {
+          window.setTimeout(() => {
+            streamReadyRef.current = true;
+          }, 1000);
+        }
+      });
 
       pc.ontrack = (ev) => {
         if (avatarVideoRef.current && ev.streams[0]) {
@@ -320,6 +330,9 @@ function VideoInterview() {
           answer: { type: answer.type ?? "answer", sdp: answer.sdp ?? "" },
         },
       });
+
+      interviewSessionIdRef.current = await createInterviewSession();
+      startedAtRef.current = Date.now();
 
       setCallActive(true);
       callActiveRef.current = true;
