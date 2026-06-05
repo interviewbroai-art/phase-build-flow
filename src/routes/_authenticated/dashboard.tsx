@@ -90,23 +90,23 @@ function Dashboard() {
 
 
   return (
-    <div className="px-6 py-8 md:py-10 max-w-6xl mx-auto">
+    <div className="px-4 py-5 md:px-6 md:py-10 max-w-6xl mx-auto">
       <UpgradeReminder plan={(profile as any)?.plan} planExpiresAt={(profile as any)?.plan_expires_at} />
       {/* Mobile brand */}
-      <div className="lg:hidden mb-6 flex items-center justify-between">
+      <div className="lg:hidden mb-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <span className="grid place-items-center w-9 h-9 rounded-2xl clay-sm">
-            <Sparkles className="w-4 h-4 text-primary-glow" />
+          <span className="grid place-items-center w-8 h-8 rounded-2xl clay-sm">
+            <Sparkles className="w-3.5 h-3.5 text-primary-glow" />
           </span>
-          <span className="font-display font-bold">
+          <span className="font-display font-bold text-sm">
             InterviewBro<span className="text-gradient"> AI</span>
           </span>
         </Link>
-        <Link to="/settings" className="w-9 h-9 rounded-2xl clay-sm grid place-items-center overflow-hidden">
+        <Link to="/settings" className="w-8 h-8 rounded-2xl clay-sm grid place-items-center overflow-hidden">
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-xs font-display font-bold text-gradient">
+            <span className="text-[10px] font-display font-bold text-gradient">
               {firstName.slice(0, 2).toUpperCase()}
             </span>
           )}
@@ -118,14 +118,14 @@ function Dashboard() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-end md:justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 md:gap-4"
       >
         <div>
-          <p className="text-sm text-muted-foreground">Welcome back</p>
-          <h1 className="mt-1 text-3xl md:text-4xl font-bold">
+          <p className="text-xs md:text-sm text-muted-foreground">Welcome back</p>
+          <h1 className="mt-0.5 text-2xl md:text-4xl font-bold">
             Hi {firstName} <span className="text-gradient">👋</span>
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm max-w-md">
+          <p className="mt-1 md:mt-2 text-muted-foreground text-xs md:text-sm max-w-md">
             {profile?.default_job_role
               ? `Defaults: ${profile.default_job_role} · ${profile.default_interview_mode}`
               : "Set up your defaults in Settings."}
@@ -156,7 +156,7 @@ function Dashboard() {
       })()}
 
       {/* Stats */}
-      <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 md:mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard icon={Flame} label="Current streak" value={`${streak} days`} sub={`Best: ${longest}`} accent />
         <StatCard
           icon={Zap}
@@ -168,6 +168,7 @@ function Dashboard() {
         <StatCard icon={Trophy} label="Total XP" value={xp.toLocaleString("en-IN")} />
         <StatCard icon={Target} label="Sessions (30d)" value={String(weekly?.length ?? 0)} />
       </div>
+
 
       {/* Streak analytics widget */}
       <StreakWidget sessions={weekly ?? []} currentStreak={streak} longest={longest} />
