@@ -340,7 +340,7 @@ function StreakWidget({
   }, [days]);
 
   return (
-    <section className="mt-8 clay p-6">
+    <section className="mt-6 md:mt-8 clay p-4 md:p-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
