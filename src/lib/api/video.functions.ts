@@ -55,7 +55,7 @@ async function assertPremium(
 }
 
 const DEFAULT_PRESENTER =
-  "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/image.jpeg";
+  "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg";
 
 export const createDidStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
