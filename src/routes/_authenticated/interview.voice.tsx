@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { effectivePlan } from "@/lib/billing/plans";
 import { voiceInterviewTurn } from "@/lib/api/voice.functions";
+import { scoreInterview } from "@/lib/api/interview.functions";
 
 export const Route = createFileRoute("/_authenticated/interview/voice")({
   head: () => ({ meta: [{ title: "Voice interview — InterviewBro AI" }] }),
@@ -30,7 +31,10 @@ type Turn = { role: "user" | "assistant"; content: string };
 function VoiceInterview() {
   const { user } = useAuth();
   const userId = user!.id;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const turnFn = useServerFn(voiceInterviewTurn);
+  const scoreFn = useServerFn(scoreInterview);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-voice", userId],
@@ -60,12 +64,16 @@ function VoiceInterview() {
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [interim, setInterim] = useState("");
   const [muted, setMuted] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<Turn[]>([]);
+  const interviewSessionIdRef = useRef<string | null>(null);
+  const startedAtRef = useRef<number>(Date.now());
+  const endingRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const callActiveRef = useRef(false);
   const mutedRef = useRef(false);
@@ -76,6 +84,9 @@ function VoiceInterview() {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    endingRef.current = ending;
+  }, [ending]);
 
   useEffect(() => {
     transcriptRef.current = transcript;
