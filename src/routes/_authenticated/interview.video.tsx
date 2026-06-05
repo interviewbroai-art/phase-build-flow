@@ -82,6 +82,7 @@ function VideoInterview() {
   const [callActive, setCallActive] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [listening, setListening] = useState(false);
   const [muted, setMuted] = useState(false);
   const [camOn, setCamOn] = useState(true);
@@ -95,10 +96,14 @@ function VideoInterview() {
   const camStreamRef = useRef<MediaStream | null>(null);
   const streamIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const interviewSessionIdRef = useRef<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<Turn[]>([]);
   const callActiveRef = useRef(false);
   const mutedRef = useRef(false);
+  const endingRef = useRef(false);
+  const streamReadyRef = useRef(false);
+  const startedAtRef = useRef<number>(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const attentionTimerRef = useRef<number | null>(null);
 
@@ -108,6 +113,9 @@ function VideoInterview() {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    endingRef.current = ending;
+  }, [ending]);
   useEffect(() => {
     transcriptRef.current = transcript;
     scrollRef.current?.scrollTo({
