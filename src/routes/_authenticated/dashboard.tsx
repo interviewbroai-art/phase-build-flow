@@ -390,13 +390,14 @@ function StreakWidget({
               </div>
               <div
                 className={
-                  "mt-1.5 mx-auto w-10 h-10 sm:w-12 sm:h-12 rounded-2xl grid place-items-center transition " +
+                  "mt-1.5 mx-auto w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl grid place-items-center transition " +
                   (done
                     ? "clay-sm ring-1 ring-primary/40"
                     : d.isToday
                     ? "clay-inset ring-1 ring-accent/40"
                     : "clay-inset opacity-60")
                 }
+
                 style={
                   done ? { background: "var(--gradient-primary)" } : undefined
                 }
