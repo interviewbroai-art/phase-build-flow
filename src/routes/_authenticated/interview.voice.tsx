@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { effectivePlan } from "@/lib/billing/plans";
 import { voiceInterviewTurn } from "@/lib/api/voice.functions";
+import { scoreInterview } from "@/lib/api/interview.functions";
 
 export const Route = createFileRoute("/_authenticated/interview/voice")({
   head: () => ({ meta: [{ title: "Voice interview — InterviewBro AI" }] }),
@@ -30,7 +31,10 @@ type Turn = { role: "user" | "assistant"; content: string };
 function VoiceInterview() {
   const { user } = useAuth();
   const userId = user!.id;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const turnFn = useServerFn(voiceInterviewTurn);
+  const scoreFn = useServerFn(scoreInterview);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-voice", userId],
@@ -60,12 +64,16 @@ function VoiceInterview() {
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [interim, setInterim] = useState("");
   const [muted, setMuted] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<Turn[]>([]);
+  const interviewSessionIdRef = useRef<string | null>(null);
+  const startedAtRef = useRef<number>(Date.now());
+  const endingRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const callActiveRef = useRef(false);
   const mutedRef = useRef(false);
@@ -76,6 +84,9 @@ function VoiceInterview() {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    endingRef.current = ending;
+  }, [ending]);
 
   useEffect(() => {
     transcriptRef.current = transcript;
@@ -195,6 +206,26 @@ function VoiceInterview() {
     await handleAssistantTurn(next);
   }
 
+  async function createInterviewSession() {
+    const { data, error } = await supabase
+      .from("interview_sessions")
+      .insert({
+        user_id: userId,
+        job_role: jobRole.trim() || "Software Engineer",
+        experience_level: experience,
+        interview_type: "voice",
+        mode: "voice",
+        language: "en",
+        difficulty: "medium",
+        depth: "moderate",
+        status: "in_progress",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  }
+
   async function startCall() {
     if (!supported) {
       toast.error("Voice mode isn't supported in this browser. Try Chrome on desktop.");
@@ -208,13 +239,23 @@ function VoiceInterview() {
     }
     // Prime voices list
     window.speechSynthesis.getVoices();
-    setTranscript([]);
-    setCallActive(true);
-    callActiveRef.current = true;
-    await handleAssistantTurn([]);
+    const toastId = toast.loading("Starting voice interview…");
+    try {
+      const sessionId = await createInterviewSession();
+      interviewSessionIdRef.current = sessionId;
+      startedAtRef.current = Date.now();
+      setTranscript([]);
+      setCallActive(true);
+      callActiveRef.current = true;
+      toast.dismiss(toastId);
+      await handleAssistantTurn([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start voice interview", { id: toastId });
+    }
   }
 
-  function endCall() {
+  async function endCall() {
+    if (endingRef.current) return;
     setCallActive(false);
     callActiveRef.current = false;
     stopListening();
@@ -224,6 +265,35 @@ function VoiceInterview() {
     setSpeaking(false);
     setThinking(false);
     setInterim("");
+
+    const sessionId = interviewSessionIdRef.current;
+    const finalTranscript = transcriptRef.current;
+    const hasCandidateAnswer = finalTranscript.some((t) => t.role === "user");
+    if (!sessionId || !hasCandidateAnswer) return;
+
+    setEnding(true);
+    endingRef.current = true;
+    const toastId = toast.loading("Scoring your voice interview…");
+    try {
+      await scoreFn({
+        data: {
+          sessionId,
+          jobRole: jobRole.trim() || "Software Engineer",
+          experience,
+          difficulty: "medium",
+          durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
+          transcript: finalTranscript,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["profile", userId] });
+      await qc.invalidateQueries({ queryKey: ["sessions", userId] });
+      toast.success("Voice interview complete! Score saved and XP awarded.", { id: toastId });
+      navigate({ to: "/sessions/$sessionId", params: { sessionId }, replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Scoring failed", { id: toastId });
+      setEnding(false);
+      endingRef.current = false;
+    }
   }
 
   useEffect(() => {

@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { effectivePlan } from "@/lib/billing/plans";
+import { scoreInterview } from "@/lib/api/interview.functions";
 import {
   closeDidStream,
   createDidStream,
@@ -38,6 +39,8 @@ type Turn = { role: "user" | "assistant"; content: string };
 function VideoInterview() {
   const { user } = useAuth();
   const userId = user!.id;
+  const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const createFn = useServerFn(createDidStream);
   const sdpFn = useServerFn(sendDidSdpAnswer);
@@ -45,6 +48,7 @@ function VideoInterview() {
   const speakFn = useServerFn(speakOnDidStream);
   const closeFn = useServerFn(closeDidStream);
   const brainFn = useServerFn(videoInterviewBrain);
+  const scoreFn = useServerFn(scoreInterview);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-video", userId],
@@ -78,6 +82,7 @@ function VideoInterview() {
   const [callActive, setCallActive] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [listening, setListening] = useState(false);
   const [muted, setMuted] = useState(false);
   const [camOn, setCamOn] = useState(true);
@@ -91,10 +96,14 @@ function VideoInterview() {
   const camStreamRef = useRef<MediaStream | null>(null);
   const streamIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const interviewSessionIdRef = useRef<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<Turn[]>([]);
   const callActiveRef = useRef(false);
   const mutedRef = useRef(false);
+  const endingRef = useRef(false);
+  const streamReadyRef = useRef(false);
+  const startedAtRef = useRef<number>(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const attentionTimerRef = useRef<number | null>(null);
 
@@ -104,6 +113,9 @@ function VideoInterview() {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    endingRef.current = ending;
+  }, [ending]);
   useEffect(() => {
     transcriptRef.current = transcript;
     scrollRef.current?.scrollTo({
@@ -176,6 +188,33 @@ function VideoInterview() {
     setListening(false);
   }
 
+  async function waitForStreamReady() {
+    for (let i = 0; i < 20; i += 1) {
+      if (streamReadyRef.current) return;
+      await new Promise((resolve) => window.setTimeout(resolve, 150));
+    }
+  }
+
+  async function createInterviewSession() {
+    const { data, error } = await supabase
+      .from("interview_sessions")
+      .insert({
+        user_id: userId,
+        job_role: jobRole.trim() || "Software Engineer",
+        experience_level: experience,
+        interview_type: "video",
+        mode: "video",
+        language: "en",
+        difficulty: "medium",
+        depth: "moderate",
+        status: "in_progress",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  }
+
   async function handleUserTurn(text: string) {
     const next: Turn[] = [
       ...transcriptRef.current,
@@ -198,6 +237,7 @@ function VideoInterview() {
       ];
       setTranscript(next);
       if (streamIdRef.current && sessionIdRef.current) {
+        await waitForStreamReady();
         await speakFn({
           data: {
             streamId: streamIdRef.current,
@@ -243,6 +283,16 @@ function VideoInterview() {
 
       const pc = new RTCPeerConnection({ iceServers: stream.ice_servers });
       pcRef.current = pc;
+      streamReadyRef.current = false;
+
+      const dataChannel = pc.createDataChannel("JanusDataChannel");
+      dataChannel.addEventListener("message", (message) => {
+        if (String(message.data).startsWith("stream/ready")) {
+          window.setTimeout(() => {
+            streamReadyRef.current = true;
+          }, 1000);
+        }
+      });
 
       pc.ontrack = (ev) => {
         if (avatarVideoRef.current && ev.streams[0]) {
@@ -281,6 +331,9 @@ function VideoInterview() {
         },
       });
 
+      interviewSessionIdRef.current = await createInterviewSession();
+      startedAtRef.current = Date.now();
+
       setCallActive(true);
       callActiveRef.current = true;
       setConnecting(false);
@@ -304,6 +357,7 @@ function VideoInterview() {
   }
 
   async function endCall() {
+    if (endingRef.current) return;
     setCallActive(false);
     callActiveRef.current = false;
     stopListening();
@@ -338,6 +392,35 @@ function VideoInterview() {
       } catch {
         // ignore
       }
+    }
+
+    const interviewSessionId = interviewSessionIdRef.current;
+    const finalTranscript = transcriptRef.current;
+    const hasCandidateAnswer = finalTranscript.some((t) => t.role === "user");
+    if (!interviewSessionId || !hasCandidateAnswer) return;
+
+    setEnding(true);
+    endingRef.current = true;
+    const toastId = toast.loading("Scoring your video interview…");
+    try {
+      await scoreFn({
+        data: {
+          sessionId: interviewSessionId,
+          jobRole: jobRole.trim() || "Software Engineer",
+          experience,
+          difficulty: "medium",
+          durationSeconds: Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)),
+          transcript: finalTranscript,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["profile", userId] });
+      await qc.invalidateQueries({ queryKey: ["sessions", userId] });
+      toast.success("Video interview complete! Score saved and XP awarded.", { id: toastId });
+      navigate({ to: "/sessions/$sessionId", params: { sessionId: interviewSessionId }, replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Scoring failed", { id: toastId });
+      setEnding(false);
+      endingRef.current = false;
     }
   }
 

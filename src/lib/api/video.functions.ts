@@ -8,10 +8,11 @@ const DID_BASE = "https://api.d-id.com";
 async function did(path: string, init: RequestInit & { method: string }) {
   const key = process.env.DID_API_KEY;
   if (!key) throw new Error("DID_API_KEY is not configured");
+  const authorization = key.trim().startsWith("Basic ") ? key.trim() : `Basic ${key.trim()}`;
   const res = await fetch(`${DID_BASE}${path}`, {
     ...init,
     headers: {
-      Authorization: `Basic ${key}`,
+      Authorization: authorization,
       "Content-Type": "application/json",
       Accept: "application/json",
       ...(init.headers ?? {}),
@@ -54,7 +55,7 @@ async function assertPremium(
 }
 
 const DEFAULT_PRESENTER =
-  "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/image.jpeg";
+  "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/v1_image.jpeg";
 
 export const createDidStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
