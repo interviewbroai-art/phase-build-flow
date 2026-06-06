@@ -1139,12 +1139,12 @@ function VideoInterview() {
                     sttFallback ? "Type your answer…" : "Or type your answer…"
                   }
                   className="flex-1 clay-inset rounded-xl px-3 py-2 bg-transparent text-sm outline-none focus:ring-2 focus:ring-primary/40"
-                  disabled={thinking || stage === "ending"}
+                  disabled={thinking}
                 />
                 <button
                   type="submit"
                   className="btn-clay shrink-0"
-                  disabled={!typedAnswer.trim() || thinking || stage === "ending"}
+                  disabled={!typedAnswer.trim() || thinking}
                 >
                   <Send className="w-4 h-4" />
                 </button>
